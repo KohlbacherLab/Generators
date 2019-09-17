@@ -45,6 +45,18 @@ public final class Tests
 
 
     @Test
+    public void testOneOfGen(){
+
+        Gen<String> vowels = Gen.oneOf("A","E","I","O","U","Y");
+
+        Stream.generate(() -> vowels.next(RND))
+              .limit(20)
+              .forEach(System.out::println);
+
+    }
+
+
+    @Test
     public void testListGen(){
 
         Gen<List<Integer>> gen = Gen.listOf(15,Gen.between(10,42));

@@ -4,6 +4,7 @@ package de.ekut.tbi.generators;
 import java.util.Random;
 import java.util.Optional;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import java.util.function.Function;
@@ -92,10 +93,18 @@ abstract class Gen<T>
    @SafeVarargs
    public static <T> Gen<T> oneOf(T t1, T t2, T... ts){
 
-      List<T> vals = Arrays.asList(t1,t2);
-      vals.addAll(Arrays.asList(ts));
-      
-      return build(rnd -> vals.get(rnd.nextInt(vals.size())));    
+      List<T> vals = Stream.concat(Stream.of(t1,t2),
+                                   Stream.of(ts))
+                           .collect(toList());
+      return oneOf(vals);
+   }
+
+   public static <T> Gen<T> oneOf(Collection<T> ts){
+      return build(rnd -> ts.stream()
+                            .skip(rnd.nextInt(ts.size()))
+                            .findFirst()
+                            .get());    
+//      return build(rnd -> ts.get(rnd.nextInt(ts.size())));    
    }
 
 
@@ -104,6 +113,18 @@ abstract class Gen<T>
                                   .filter(b -> b == true)
                                   .map(b -> gen.next(rnd)));
    }
+
+
+   public static final Gen<DayOfWeek> DAYOFWEEK = Gen.oneOf(
+       DayOfWeek.MONDAY,
+       DayOfWeek.TUESDAY,
+       DayOfWeek.WEDNESDAY,
+       DayOfWeek.THURSDAY,
+       DayOfWeek.FRIDAY,
+       DayOfWeek.SATURDAY,
+       DayOfWeek.SUNDAY
+   ); 
+
 
 
 }
