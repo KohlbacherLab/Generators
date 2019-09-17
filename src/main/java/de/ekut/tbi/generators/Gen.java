@@ -6,13 +6,22 @@ import java.util.Optional;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import static java.util.AbstractMap.SimpleImmutableEntry;
 
 import java.util.function.Function;
 import java.util.function.BiFunction;
+
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 import java.time.*;
+
+import java.lang.reflect.Type;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 
 
 
@@ -103,6 +112,13 @@ abstract class Gen<T>
    }
 
 
+   public static <T> Gen<Optional<T>> optional(Gen<T> gen){
+     return build(rnd -> Optional.of(rnd.nextBoolean())
+                                 .filter(b -> b == true)
+                                 .map(b -> gen.next(rnd)));
+   }
+
+
    public static <T> Gen<List<T>> listOf(int n, Gen<T> gen){
      return stream(gen).map(s -> s.limit(n).collect(toList()));
    }
@@ -127,14 +143,6 @@ abstract class Gen<T>
                            .skip(rnd.nextInt(ts.size()))
                            .findFirst()
                            .get());    
-//     return build(rnd -> ts.get(rnd.nextInt(ts.size())));    
-   }
-
-
-   public static <T> Gen<Optional<T>> optional(Gen<T> gen){
-     return build(rnd -> Optional.of(rnd.nextBoolean())
-                                 .filter(b -> b == true)
-                                 .map(b -> gen.next(rnd)));
    }
 
 
@@ -206,5 +214,70 @@ abstract class Gen<T>
               e -> f.apply(a,b,c,d,e))))) 
             );
    }
+
+
+
+   private static <K,V> Map.Entry<K,V> entry(K k, V v){
+     return new SimpleImmutableEntry<>(k,v);
+   }
+
+
+   private static Map<Type,Gen<?>> BASIC_GENS =
+     Stream.of(entry(int.class,       INT),
+               entry(double.class,    DOUBLE),
+               entry(boolean.class,   BOOLEAN),
+               entry(String.class,    IDENTIFIER),
+               entry(java.util.UUID.class, UUID),
+               entry(LocalDate.class, LOCALDATE_NOW),
+               entry(LocalDateTime.class, LOCALDATETIME_NOW)
+//               entry(.class, ),
+              )
+              .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+
+
+   public static <T> void register(Gen<T> gen, Class<T> c){
+     BASIC_GENS.put(c,gen);
+   } 
+
+   public static <T> Gen<T> of(Class<T> cl){
+     return (Gen<T>)BASIC_GENS.computeIfAbsent(cl, Gen::deriveFor);
+   }
+
+   private static <T> Gen<T> of(Type t){
+     return (Gen<T>)BASIC_GENS.computeIfAbsent(t, Gen::deriveFor);
+   }
+
+   private static Gen<?> deriveFor(Type t){
+     return deriveFor((Class<?>)t);
+   }
+
+   private static Gen<?> deriveFor(Class<?> cl){
+
+     Constructor<?> cons = Stream.of(cl.getDeclaredConstructors())
+                                 .filter(c -> Modifier.isPublic(c.getModifiers()))
+                                 .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
+                                 .get();
+      
+     Type[] signature = cons.getGenericParameterTypes();
+
+     List<Gen<?>> gens = Stream.of(signature)
+                               .map(Gen::of)
+                               .collect(toList());
+           
+     return build(
+       rnd -> {
+         try {
+           return cons.newInstance(gens.stream()
+                                .map(g -> g.next(rnd))
+                                .toArray());
+         } catch (Exception ex){
+            throw new RuntimeException(ex); 
+         }
+       }
+     );
+     
+   }
+
 
 }

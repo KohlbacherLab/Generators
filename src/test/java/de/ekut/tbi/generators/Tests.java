@@ -69,13 +69,16 @@ public final class Tests
     @Test
     public void testFooGen(){
 
+/*
       Gen<Foo> genfoo = Gen.combine(
         Gen.INT,
         Gen.DOUBLE,
         Gen.IDENTIFIER,
         Foo::new
       );
- 
+*/ 
+      Gen<Foo> genfoo = Gen.of(Foo.class);
+
       Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
 
       List<Foo> foos = genfoos.next(RND);
@@ -89,7 +92,8 @@ public final class Tests
     @Test
     public void testPatientGen(){
 
-      Gen<Patient> patient = Gen.combine(
+/*
+       Gen<Patient> patient = Gen.combine(
         Gen.IDENTIFIER,
         Gen.oneOf(Patient.Gender.MALE,
                   Patient.Gender.FEMALE,
@@ -99,6 +103,18 @@ public final class Tests
         Gen.optional(Gen.LOCALDATE_NOW),
         Patient::of
       );
+*/
+      
+      Gen.register(
+        Gen.oneOf(Patient.Gender.MALE,
+                  Patient.Gender.FEMALE,
+                  Patient.Gender.OTHER,
+                  Patient.Gender.UNKNOWN),
+        Patient.Gender.class
+      );
+
+      Gen<Patient> patient = Gen.of(Patient.class);
+ 
  
       Gen<List<Patient>> genpatients = Gen.listOf(15,patient);
 
