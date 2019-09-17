@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 
 import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
@@ -21,13 +22,35 @@ abstract class Gen<T>
    Gen(){ }
 
 
+   @FunctionalInterface
+   public interface Function3<A,B,C,T>{
+     public T apply(A a, B b, C c);
+   }
+
+   @FunctionalInterface
+   public interface Function4<A,B,C,D,T>{
+     public T apply(A a, B b, C c, D d);
+   }
+
+   @FunctionalInterface
+   public interface Function5<A,B,C,D,E,T>{
+     public T apply(A a, B b, C c, D d, E e);
+   }
+
+   @FunctionalInterface
+   public interface Function6<A,B,C,D,E,F,T>{
+     public T apply(A a, B b, C c, D d, E e, F f);
+   }
+
+
+
    public static <T> Gen<T> build(Function<Random,? extends T> f)
    {
-       return new Gen<T>(){
-           public T next(Random rnd){
-               return f.apply(rnd);
-           }
-       };
+     return new Gen<T>(){
+       public T next(Random rnd){
+         return f.apply(rnd);
+       }
+     };
    }
 
 
@@ -36,12 +59,12 @@ abstract class Gen<T>
  
    public <U> Gen<U> map(Function<? super T, ? extends U> f)
    {
-      return build(rnd -> f.apply(this.next(rnd)));
+     return build(rnd -> f.apply(this.next(rnd)));
    }
 
    public <U> Gen<U> flatMap(Function<? super T, Gen<U>> f)
    {
-      return build(rnd -> f.apply(this.next(rnd)).next(rnd));
+     return build(rnd -> f.apply(this.next(rnd)).next(rnd));
    }
 
 
@@ -68,63 +91,120 @@ abstract class Gen<T>
 
    public static Gen<Integer> between(int start, int endExcl){
 
-       if (endExcl < start){
-          throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
-       }
+     if (endExcl < start){
+        throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
+     }
 
-       return build(rnd -> { return rnd.nextInt(endExcl-start) + start; } );
+     return build(rnd -> { return rnd.nextInt(endExcl-start) + start; } );
    }
 
    public static <T> Gen<T> constant(T t){
-       return build(rnd -> t);
+     return build(rnd -> t);
    }
 
 
    public static <T> Gen<List<T>> listOf(int n, Gen<T> gen){
-       return stream(gen).map(s -> s.limit(n).collect(toList()));
+     return stream(gen).map(s -> s.limit(n).collect(toList()));
    }
 
 
    public static <T> Gen<Stream<T>> stream(Gen<T> gen){
-       return build(rnd -> Stream.generate(() -> gen.next(rnd)));
+     return build(rnd -> Stream.generate(() -> gen.next(rnd)));
    }
 
 
    @SafeVarargs
    public static <T> Gen<T> oneOf(T t1, T t2, T... ts){
 
-      List<T> vals = Stream.concat(Stream.of(t1,t2),
-                                   Stream.of(ts))
-                           .collect(toList());
-      return oneOf(vals);
+     List<T> vals = Stream.concat(Stream.of(t1,t2),
+                                  Stream.of(ts))
+                          .collect(toList());
+     return oneOf(vals);
    }
 
    public static <T> Gen<T> oneOf(Collection<T> ts){
-      return build(rnd -> ts.stream()
-                            .skip(rnd.nextInt(ts.size()))
-                            .findFirst()
-                            .get());    
-//      return build(rnd -> ts.get(rnd.nextInt(ts.size())));    
+     return build(rnd -> ts.stream()
+                           .skip(rnd.nextInt(ts.size()))
+                           .findFirst()
+                           .get());    
+//     return build(rnd -> ts.get(rnd.nextInt(ts.size())));    
    }
 
 
    public static <T> Gen<Optional<T>> optional(Gen<T> gen){
-      return build(rnd -> Optional.of(rnd.nextBoolean())
-                                  .filter(b -> b == true)
-                                  .map(b -> gen.next(rnd)));
+     return build(rnd -> Optional.of(rnd.nextBoolean())
+                                 .filter(b -> b == true)
+                                 .map(b -> gen.next(rnd)));
    }
 
 
    public static final Gen<DayOfWeek> DAYOFWEEK = Gen.oneOf(
-       DayOfWeek.MONDAY,
-       DayOfWeek.TUESDAY,
-       DayOfWeek.WEDNESDAY,
-       DayOfWeek.THURSDAY,
-       DayOfWeek.FRIDAY,
-       DayOfWeek.SATURDAY,
-       DayOfWeek.SUNDAY
+     DayOfWeek.MONDAY,
+     DayOfWeek.TUESDAY,
+     DayOfWeek.WEDNESDAY,
+     DayOfWeek.THURSDAY,
+     DayOfWeek.FRIDAY,
+     DayOfWeek.SATURDAY,
+     DayOfWeek.SUNDAY
    ); 
 
 
+   public static <A,B,T> Gen<T> combine
+   (
+     Gen<A> genA,
+     Gen<B> genB,
+     BiFunction<A,B,T> f
+   ){
+     return genA.flatMap(a -> genB.map(b -> f.apply(a,b)));
+   }
+
+
+   public static <A,B,C,T> Gen<T> combine
+   (
+     Gen<A> genA,
+     Gen<B> genB,
+     Gen<C> genC,
+     Function3<A,B,C,T> f
+   ){
+     return genA.flatMap(
+              a -> genB.flatMap(
+              b -> genC.map(
+              c -> f.apply(a,b,c)))
+            );
+   }
+
+   public static <A,B,C,D,T> Gen<T> combine
+   (
+     Gen<A> genA,
+     Gen<B> genB,
+     Gen<C> genC,
+     Gen<D> genD,
+     Function4<A,B,C,D,T> f
+   ){
+     return genA.flatMap(
+              a -> genB.flatMap(
+              b -> genC.flatMap(
+              c -> genD.map(
+              d -> f.apply(a,b,c,d)))) 
+            );
+   }
+
+   public static <A,B,C,D,E,T> Gen<T> combine
+   (
+     Gen<A> genA,
+     Gen<B> genB,
+     Gen<C> genC,
+     Gen<D> genD,
+     Gen<E> genE,
+     Function5<A,B,C,D,E,T> f
+   ){
+     return genA.flatMap(
+              a -> genB.flatMap(
+              b -> genC.flatMap(
+              c -> genD.flatMap(
+              d -> genE.map(
+              e -> f.apply(a,b,c,d,e))))) 
+            );
+   }
 
 }
