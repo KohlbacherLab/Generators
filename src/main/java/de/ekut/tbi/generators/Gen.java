@@ -5,6 +5,7 @@ import java.util.Random;
 import java.util.Optional;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,6 +13,8 @@ import static java.util.AbstractMap.SimpleImmutableEntry;
 
 import java.util.function.Function;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
@@ -28,7 +31,7 @@ import java.lang.reflect.Modifier;
 abstract class Gen<T>
 {
 
-   Gen(){ }
+   private Gen(){ }
 
 
    @FunctionalInterface
@@ -52,10 +55,12 @@ abstract class Gen<T>
    }
 
 
-
-   public static <T> Gen<T> build(Function<Random,? extends T> f)
+   // Gen constructor method
+   public static <T> Gen<T> build(Function<? super Random,? extends T> f)
    {
      return new Gen<T>(){
+
+       @Override
        public T next(Random rnd){
          return f.apply(rnd);
        }
@@ -63,18 +68,34 @@ abstract class Gen<T>
    }
 
 
-
+   //--------------------------------------------------------------------------
+   // Gen<T> class public interface
+   //--------------------------------------------------------------------------
    public abstract T next(Random rnd);
- 
+
+   //TODO: re-consider this utility method, because at present not stack-safe 
+   public Gen<T> filter(Predicate<T> p)
+   {
+     return build(rnd -> doFilter(this,p,rnd));
+   }
+
+   private static <T> T doFilter(Gen<T> gen, Predicate<T> p, Random rnd){
+     T t = gen.next(rnd);
+     return p.test(t) ? t : doFilter(gen,p,rnd);
+   }
+
    public <U> Gen<U> map(Function<? super T, ? extends U> f)
    {
      return build(rnd -> f.apply(this.next(rnd)));
    }
 
-   public <U> Gen<U> flatMap(Function<? super T, Gen<U>> f)
+   public <U> Gen<U> flatMap(Function<? super T, ? extends Gen<? extends U>> f)
    {
      return build(rnd -> f.apply(this.next(rnd)).next(rnd));
    }
+   //--------------------------------------------------------------------------
+   //--------------------------------------------------------------------------
+
 
 
    public static final Gen<Integer> INT     = build(rnd -> rnd.nextInt());
@@ -98,6 +119,7 @@ abstract class Gen<T>
    public static final Gen<Instant> INSTANT_NOW = build(rnd -> Instant.now());
    
 
+
    public static Gen<Integer> between(int start, int endExcl){
 
      if (endExcl < start){
@@ -107,8 +129,55 @@ abstract class Gen<T>
      return build(rnd -> { return rnd.nextInt(endExcl-start) + start; } );
    }
 
+
+   public static Gen<Long> between(long start, long endExcl){
+
+     if (endExcl < start){
+        throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
+     }
+
+     return iterate(new Random(42).longs(start, endExcl).iterator());
+   }
+
+
+   public static Gen<Double> between(double start, double end){
+
+     if (end < start){
+        throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
+     }
+
+     return iterate(new Random(42).doubles(start,end).iterator());
+//     return build(rnd -> { return rnd.nextDouble()*(end-start) + start; } );
+   }
+
+
    public static <T> Gen<T> constant(T t){
      return build(rnd -> t);
+   }
+
+
+   public static <T> Gen<T> iterate(T seed, UnaryOperator<T> f){
+     return unfold(Stream.iterate(seed,f));
+   }
+
+
+   public static <T> Gen<T> unfold(Stream<T> s){
+     return iterate(s.iterator());
+   }
+
+
+   public static <T> Gen<T> iterate(Iterator<T> it){
+     return build(rnd -> it.next());
+   }
+
+
+   public static Gen<Integer> index(int start){
+     return iterate(start, i -> i+1);
+   }
+
+
+   public static Gen<Integer> index(){
+     return index(0);
    }
 
 
@@ -146,6 +215,32 @@ abstract class Gen<T>
    }
 
 
+   static final class P<T>
+   {
+     public final int frequency;
+     public final T value;
+
+     P(int f, T t){
+       this.frequency = f;
+       this. value    = t;
+     }
+   }
+
+   public static <T> P<T> p(int f, T t){
+     return new P<>(f,t);
+   }
+
+   public static <T> Gen<T> oneOfDistribution(P<T> p1, P<T> p2, P<T>... ps){
+
+throw new RuntimeException("TODO");
+   }
+
+
+
+   //--------------------------------------------------------------------------
+   // DateTime type generators
+   //--------------------------------------------------------------------------
+
    public static final Gen<DayOfWeek> DAYOFWEEK = Gen.oneOf(
      DayOfWeek.MONDAY,
      DayOfWeek.TUESDAY,
@@ -157,7 +252,23 @@ abstract class Gen<T>
    ); 
 
 
-   public static <A,B,T> Gen<T> combine
+   public static final Gen<Month> MONTH = Gen.oneOf(
+     Month.JANUARY, Month.FEBRUARY, Month.MARCH,
+     Month.APRIL,   Month.MAY,      Month.JUNE,
+     Month.JULY,    Month.AUGUST,   Month.SEPTEMBER,
+     Month.OCTOBER, Month.NOVEMBER, Month.DECEMBER
+   );
+
+   public static Gen<LocalDate> between(LocalDate start, LocalDate end){
+      return between(start.toEpochDay(),
+                     end.toEpochDay()).map(LocalDate::ofEpochDay);
+   }
+
+
+   //--------------------------------------------------------------------------
+   // Combinators to provide "for comprehension"-like syntax
+   //--------------------------------------------------------------------------
+   public static <A,B,T> Gen<T> lift
    (
      Gen<A> genA,
      Gen<B> genB,
@@ -167,7 +278,7 @@ abstract class Gen<T>
    }
 
 
-   public static <A,B,C,T> Gen<T> combine
+   public static <A,B,C,T> Gen<T> lift
    (
      Gen<A> genA,
      Gen<B> genB,
@@ -181,7 +292,7 @@ abstract class Gen<T>
             );
    }
 
-   public static <A,B,C,D,T> Gen<T> combine
+   public static <A,B,C,D,T> Gen<T> lift
    (
      Gen<A> genA,
      Gen<B> genB,
@@ -197,7 +308,7 @@ abstract class Gen<T>
             );
    }
 
-   public static <A,B,C,D,E,T> Gen<T> combine
+   public static <A,B,C,D,E,T> Gen<T> lift
    (
      Gen<A> genA,
      Gen<B> genB,
@@ -217,6 +328,9 @@ abstract class Gen<T>
 
 
 
+   //--------------------------------------------------------------------------
+   // Methods for automatic derivation of Gen<T> for a given Class<T>
+   //--------------------------------------------------------------------------
    private static <K,V> Map.Entry<K,V> entry(K k, V v){
      return new SimpleImmutableEntry<>(k,v);
    }

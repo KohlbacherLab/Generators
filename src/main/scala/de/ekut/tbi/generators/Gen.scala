@@ -17,7 +17,7 @@ import shapeless.{
 
 
 
-trait Gen[T]
+sealed trait Gen[T]
 {
 
   def next(implicit rnd: Random): T

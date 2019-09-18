@@ -47,6 +47,18 @@ public final class Tests
 
 
     @Test
+    public void testFiltering(){
+
+      Gen<Integer> evens = Gen.index(0)
+                              .filter(i -> i%2 == 0);
+
+      assertTrue(Stream.generate(() -> evens.next(RND))
+                       .limit(30)
+                       .allMatch(i -> i%2 == 0));
+    }
+
+
+    @Test
     public void testOneOfGen(){
 
       Gen<String> vowels = Gen.oneOf("A","E","I","O","U","Y");
@@ -69,15 +81,15 @@ public final class Tests
     @Test
     public void testFooGen(){
 
-/*
-      Gen<Foo> genfoo = Gen.combine(
+
+      Gen<Foo> genfoo = Gen.lift(
         Gen.INT,
         Gen.DOUBLE,
         Gen.IDENTIFIER,
         Foo::new
       );
-*/ 
-      Gen<Foo> genfoo = Gen.of(Foo.class);
+ 
+//      Gen<Foo> genfoo = Gen.of(Foo.class);
 
       Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
 
@@ -92,8 +104,7 @@ public final class Tests
     @Test
     public void testPatientGen(){
 
-/*
-       Gen<Patient> patient = Gen.combine(
+      Gen<Patient> patient = Gen.lift(
         Gen.IDENTIFIER,
         Gen.oneOf(Patient.Gender.MALE,
                   Patient.Gender.FEMALE,
@@ -103,8 +114,8 @@ public final class Tests
         Gen.optional(Gen.LOCALDATE_NOW),
         Patient::of
       );
-*/
-      
+
+/*      
       Gen.register(
         Gen.oneOf(Patient.Gender.MALE,
                   Patient.Gender.FEMALE,
@@ -114,7 +125,7 @@ public final class Tests
       );
 
       Gen<Patient> patient = Gen.of(Patient.class);
- 
+*/ 
  
       Gen<List<Patient>> genpatients = Gen.listOf(15,patient);
 

@@ -31,6 +31,8 @@ lazy val root = project.in(file("."))
 
 lazy val settings = commonSettings
 
+unmanagedSourceDirectories in Compile := (scalaSource in Compile).value :: Nil
+unmanagedSourceDirectories in Test := (scalaSource in Test).value :: Nil
 
 lazy val compilerOptions = Seq(
   "-unchecked",

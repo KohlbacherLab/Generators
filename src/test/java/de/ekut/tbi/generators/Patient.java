@@ -19,31 +19,31 @@ public final class Patient
   private final String id;
   private final Gender gender;
   private final LocalDate birthDate;
-//  private final Optional<LocalDate> dateOfDeath;
+  private final Optional<LocalDate> dateOfDeath;
 
 
-//  private Patient(
-  public Patient(
+  private Patient(
+//  public Patient(
     String id,
     Gender gender,
-    LocalDate birthDate//,
-//    Optional<LocalDate> dateOfDeath
+    LocalDate birthDate,
+    Optional<LocalDate> dateOfDeath
   ){
 
     this.id = id;
     this.gender = gender;
     this.birthDate = birthDate;
-//    this.dateOfDeath = dateOfDeath;
+    this.dateOfDeath = dateOfDeath;
   }
 
   public static Patient of(
     String id,
     Gender gender,
-    LocalDate birthDate//,
-//    Optional<LocalDate> dateOfDeath
+    LocalDate birthDate,
+    Optional<LocalDate> dateOfDeath
   ){
-    return new Patient(id,gender,birthDate);
-//    return new Patient(id,gender,birthDate,dateOfDeath);
+//    return new Patient(id,gender,birthDate);
+    return new Patient(id,gender,birthDate,dateOfDeath);
   }
 
  
