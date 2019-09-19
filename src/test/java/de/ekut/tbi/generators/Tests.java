@@ -8,7 +8,7 @@ import java.util.Random;
 import java.util.List;
 import java.util.stream.Stream;
 
-import java.time.DayOfWeek;
+import java.time.*;
 
 
 public final class Tests
@@ -83,9 +83,9 @@ public final class Tests
 
 
       Gen<Foo> genfoo = Gen.lift(
-        Gen.INT,
-        Gen.DOUBLE,
-        Gen.IDENTIFIER,
+        Gen.ints(),
+        Gen.doubles(),
+        Gen.idStrings(),
         Foo::new
       );
  
@@ -105,13 +105,11 @@ public final class Tests
     public void testPatientGen(){
 
       Gen<Patient> patient = Gen.lift(
-        Gen.IDENTIFIER,
-        Gen.oneOf(Patient.Gender.MALE,
-                  Patient.Gender.FEMALE,
-                  Patient.Gender.OTHER,
-                  Patient.Gender.UNKNOWN),
-        Gen.LOCALDATE_NOW,
-        Gen.optional(Gen.LOCALDATE_NOW),
+        Gen.idStrings(),
+        Gen.oneOf(Patient.Gender.MALE,  Patient.Gender.FEMALE,
+                  Patient.Gender.OTHER, Patient.Gender.UNKNOWN),
+        Gen.between(LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)),
+        Gen.optional(Gen.localDateNow()),
         Patient::of
       );
 

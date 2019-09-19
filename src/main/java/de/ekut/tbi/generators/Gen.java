@@ -14,6 +14,7 @@ import static java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.function.Function;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import java.util.stream.Stream;
@@ -55,8 +56,15 @@ abstract class Gen<T>
    }
 
 
-   // Gen constructor method
-   public static <T> Gen<T> build(Function<? super Random,? extends T> f)
+   //--------------------------------------------------------------------------
+   // Gen constructor methods
+   //--------------------------------------------------------------------------
+   public static <T> Gen<T> supply(Supplier<? extends T> s)
+   {
+      return apply(rnd -> s.get());
+   }
+
+   public static <T> Gen<T> apply(Function<? super Random,? extends T> f)
    {
      return new Gen<T>(){
 
@@ -76,7 +84,7 @@ abstract class Gen<T>
    //TODO: re-consider this utility method, because at present not stack-safe 
    public Gen<T> filter(Predicate<T> p)
    {
-     return build(rnd -> doFilter(this,p,rnd));
+     return apply(rnd -> doFilter(this,p,rnd));
    }
 
    private static <T> T doFilter(Gen<T> gen, Predicate<T> p, Random rnd){
@@ -86,73 +94,105 @@ abstract class Gen<T>
 
    public <U> Gen<U> map(Function<? super T, ? extends U> f)
    {
-     return build(rnd -> f.apply(this.next(rnd)));
+     return apply(rnd -> f.apply(this.next(rnd)));
    }
 
    public <U> Gen<U> flatMap(Function<? super T, ? extends Gen<? extends U>> f)
    {
-     return build(rnd -> f.apply(this.next(rnd)).next(rnd));
+     return apply(rnd -> f.apply(this.next(rnd)).next(rnd));
    }
    //--------------------------------------------------------------------------
    //--------------------------------------------------------------------------
 
+/*  
+   public static final Gen<Integer> INT     = apply(rnd -> rnd.nextInt());
 
+   public static final Gen<Double>  DOUBLE  = apply(rnd -> rnd.nextDouble());
 
-   public static final Gen<Integer> INT     = build(rnd -> rnd.nextInt());
+   public static final Gen<Long>    LONG    = apply(rnd -> rnd.nextLong());
 
-   public static final Gen<Double>  DOUBLE  = build(rnd -> rnd.nextDouble());
+   public static final Gen<Float>   FLOAT   = apply(rnd -> rnd.nextFloat());
 
-   public static final Gen<Long>    LONG    = build(rnd -> rnd.nextLong());
+   public static final Gen<Boolean> BOOLEAN = apply(rnd -> rnd.nextBoolean());
 
-   public static final Gen<Float>   FLOAT   = build(rnd -> rnd.nextFloat());
-
-   public static final Gen<Boolean> BOOLEAN = build(rnd -> rnd.nextBoolean());
-
-   public static final Gen<java.util.UUID> UUID = build(rnd -> java.util.UUID.randomUUID());
+   public static final Gen<java.util.UUID> UUID = apply(rnd -> java.util.UUID.randomUUID());
 
    public static final Gen<String> IDENTIFIER = UUID.map(uuid -> uuid.toString());
 
-   public static final Gen<LocalDate> LOCALDATE_NOW = build(rnd -> LocalDate.now());
+   public static final Gen<LocalDate> LOCALDATE_NOW = apply(rnd -> LocalDate.now());
 
-   public static final Gen<LocalDateTime> LOCALDATETIME_NOW = build(rnd -> LocalDateTime.now());
+   public static final Gen<LocalDateTime> LOCALDATETIME_NOW = apply(rnd -> LocalDateTime.now());
 
-   public static final Gen<Instant> INSTANT_NOW = build(rnd -> Instant.now());
+   public static final Gen<Instant> INSTANT_NOW = apply(rnd -> Instant.now());
+*/   
+   
+   private static final Gen<Integer> INT           = apply(rnd -> rnd.nextInt());
+   private static final Gen<Double>  DOUBLE        = apply(rnd -> rnd.nextDouble());
+   private static final Gen<Long>    LONG          = apply(rnd -> rnd.nextLong());
+   private static final Gen<Float>   FLOAT         = apply(rnd -> rnd.nextFloat());
+   private static final Gen<Boolean> BOOLEAN       = apply(rnd -> rnd.nextBoolean());
+   private static final Gen<java.util.UUID> UUID   = supply(java.util.UUID::randomUUID);
+   private static final Gen<String> IDENTIFIER     = UUID.map(uuid -> uuid.toString());
+   private static final Gen<LocalDate> LD_NOW      = supply(LocalDate::now);
+   private static final Gen<LocalDateTime> LDT_NOW = supply(LocalDateTime::now);
+   private static final Gen<Instant> INST_NOW      = supply(Instant::now);
    
 
+   public static final Gen<Integer> ints(){ return INT; } 
+
+   public static final Gen<Double>  doubles(){ return DOUBLE; }     
+
+   public static final Gen<Long> longs(){ return LONG; }
+
+   public static final Gen<Float> floats(){ return FLOAT; }            
+
+   public static final Gen<Boolean> booleans(){ return BOOLEAN; }
+
+   public static final Gen<java.util.UUID> uuids(){ return UUID; }
+
+   public static final Gen<String> idStrings(){ return IDENTIFIER; }   
+
+   public static final Gen<LocalDate> localDateNow(){ return LD_NOW; }      
+
+   public static final Gen<LocalDateTime> localDateTimeNow(){ return LDT_NOW; }
+
+   public static final Gen<Instant> intantNow(){ return INST_NOW; }
+   
 
    public static Gen<Integer> between(int start, int endExcl){
-
+/*
      if (endExcl < start){
         throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
      }
-
-     return build(rnd -> { return rnd.nextInt(endExcl-start) + start; } );
+*/
+     return iterate(new Random(42).ints(start, endExcl).iterator());
+//     return apply(rnd -> { return rnd.nextInt(endExcl-start) + start; } );
    }
 
 
    public static Gen<Long> between(long start, long endExcl){
-
+/*
      if (endExcl < start){
         throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
      }
-
+*/
      return iterate(new Random(42).longs(start, endExcl).iterator());
    }
 
 
    public static Gen<Double> between(double start, double end){
-
+/*
      if (end < start){
         throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
      }
-
+*/
      return iterate(new Random(42).doubles(start,end).iterator());
-//     return build(rnd -> { return rnd.nextDouble()*(end-start) + start; } );
+//     return apply(rnd -> { return rnd.nextDouble()*(end-start) + start; } );
    }
 
 
    public static <T> Gen<T> constant(T t){
-     return build(rnd -> t);
+     return apply(rnd -> t);
    }
 
 
@@ -167,7 +207,7 @@ abstract class Gen<T>
 
 
    public static <T> Gen<T> iterate(Iterator<T> it){
-     return build(rnd -> it.next());
+     return apply(rnd -> it.next());
    }
 
 
@@ -182,7 +222,7 @@ abstract class Gen<T>
 
 
    public static <T> Gen<Optional<T>> optional(Gen<T> gen){
-     return build(rnd -> Optional.of(rnd.nextBoolean())
+     return apply(rnd -> Optional.of(rnd.nextBoolean())
                                  .filter(b -> b == true)
                                  .map(b -> gen.next(rnd)));
    }
@@ -194,7 +234,7 @@ abstract class Gen<T>
 
 
    public static <T> Gen<Stream<T>> stream(Gen<T> gen){
-     return build(rnd -> Stream.generate(() -> gen.next(rnd)));
+     return apply(rnd -> Stream.generate(() -> gen.next(rnd)));
    }
 
 
@@ -208,13 +248,13 @@ abstract class Gen<T>
    }
 
    public static <T> Gen<T> oneOf(Collection<T> ts){
-     return build(rnd -> ts.stream()
+     return apply(rnd -> ts.stream()
                            .skip(rnd.nextInt(ts.size()))
                            .findFirst()
                            .get());    
    }
 
-
+/*
    static final class P<T>
    {
      public final int frequency;
@@ -234,7 +274,7 @@ abstract class Gen<T>
 
 throw new RuntimeException("TODO");
    }
-
+*/
 
 
    //--------------------------------------------------------------------------
@@ -337,13 +377,13 @@ throw new RuntimeException("TODO");
 
 
    private static Map<Type,Gen<?>> BASIC_GENS =
-     Stream.of(entry(int.class,       INT),
-               entry(double.class,    DOUBLE),
-               entry(boolean.class,   BOOLEAN),
-               entry(String.class,    IDENTIFIER),
+     Stream.of(entry(int.class,            INT),
+               entry(double.class,         DOUBLE),
+               entry(boolean.class,        BOOLEAN),
+               entry(String.class,         IDENTIFIER),
                entry(java.util.UUID.class, UUID),
-               entry(LocalDate.class, LOCALDATE_NOW),
-               entry(LocalDateTime.class, LOCALDATETIME_NOW)
+               entry(LocalDate.class,      LD_NOW),
+               entry(LocalDateTime.class,  LDT_NOW)
 //               entry(.class, ),
               )
               .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -379,7 +419,7 @@ throw new RuntimeException("TODO");
                                .map(Gen::of)
                                .collect(toList());
            
-     return build(
+     return apply(
        rnd -> {
          try {
            return cons.newInstance(gens.stream()

@@ -1,7 +1,7 @@
-#Generators
+# Scala/Java Generators
 
 
-### Purpose / Status
+## Purpose / Status
 
 Provide type-class-based utilities for generation of arbitrary data types
 with support for automatic derivation of type class instances.
@@ -12,9 +12,9 @@ in ["Functional Programming in Scala"](https://www.manning.com/books/functional-
 and [ScalaCheck](https://www.scalacheck.org/)
 
 
-### Usage example (Work In Progress)
+## Usage examples (Work In Progress)
 
-Simple example:
+### Scala example:
 
 ```scala
 
@@ -108,10 +108,92 @@ case class Patient(id: PatId,
   // Bring rnd generation "seed" into scope
   implicit val rnd = new Random(42)
 
-
   val patients = List.fill(10)(patGen.next)
-
-
 
 ```
 
+### Java example:
+
+
+```java
+// ----------------------------------------------------------------------------
+// Declare simple class
+// ----------------------------------------------------------------------------
+public final class Patient
+{
+
+  public enum Gender {
+    MALE,FEMALE,OTHER,UNKNOWN
+  }
+
+  private final String id;
+  private final Gender gender;
+  private final LocalDate birthDate;
+  private final Optional<LocalDate> dateOfDeath;
+
+  private Patient(
+    String id,
+    Gender gender,
+    LocalDate birthDate,
+    Optional<LocalDate> dateOfDeath
+  ){
+    this.id = id;
+    this.gender = gender;
+    this.birthDate = birthDate;
+    this.dateOfDeath = dateOfDeath;
+  }
+
+  public static Patient of(
+    String id,
+    Gender gender,
+    LocalDate birthDate,
+    Optional<LocalDate> dateOfDeath
+  ){
+    return new Patient(id,gender,birthDate,dateOfDeath);
+  }
+
+}
+
+// ----------------------------------------------------------------------------
+// Create Gen<Patient> by combining Gens for respective
+// Patient properties
+// (syntax analogous to Scala "for comprehensions"):
+// ----------------------------------------------------------------------------
+
+Gen<Patient> genpat = Gen.lift(
+  Gen.idStrings(),                     // Gen of identifier Strings
+  Gen.oneOf(Patient.Gender.MALE,       // Gen of velues from closed value set: here Gender
+            Patient.Gender.FEMALE,
+            Patient.Gender.OTHER,
+            Patient.Gender.UNKNOWN),
+  Gen.between(LocalDate.of(1979,1,1),  // Gen of LocalDate between given start and end
+              LocalDate.of(1990,1,1)),
+  Gen.optional(Gen.localDateNow()),    // Gen of Optional type: here LocalDate
+  Patient::of                          // Function to map respective Gen outputs to: here Patient factory method
+);
+
+
+// WORK IN PROGRESS:
+// Automatic derivation of Gen<T> from T constructor or factory method type signature
+
+
+// ----------------------------------------------------------------------------
+// Working with Generators
+// ----------------------------------------------------------------------------
+
+// Create java.util.Random instance as Generator seed
+Random rnd = new Random(42);
+
+
+Patient pat = genpat.next(rnd)
+
+// Create Generator of Patient-Lists with size 15
+Gen<List<Patient>> genpatients = Gen.listOf(15,genpat);
+
+List<Patient> patients = genpatients.next(rnd);
+
+
+// Usage with Streams
+Stream<Patient> patients = Stream.generate(() -> genpat.next(rnd)) //... do something with Stream
+
+```
