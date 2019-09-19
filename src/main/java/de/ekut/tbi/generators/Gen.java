@@ -20,6 +20,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.joining;
 
 import java.time.*;
 
@@ -104,39 +105,16 @@ abstract class Gen<T>
    //--------------------------------------------------------------------------
    //--------------------------------------------------------------------------
 
-/*  
-   public static final Gen<Integer> INT     = apply(rnd -> rnd.nextInt());
-
-   public static final Gen<Double>  DOUBLE  = apply(rnd -> rnd.nextDouble());
-
-   public static final Gen<Long>    LONG    = apply(rnd -> rnd.nextLong());
-
-   public static final Gen<Float>   FLOAT   = apply(rnd -> rnd.nextFloat());
-
-   public static final Gen<Boolean> BOOLEAN = apply(rnd -> rnd.nextBoolean());
-
-   public static final Gen<java.util.UUID> UUID = apply(rnd -> java.util.UUID.randomUUID());
-
-   public static final Gen<String> IDENTIFIER = UUID.map(uuid -> uuid.toString());
-
-   public static final Gen<LocalDate> LOCALDATE_NOW = apply(rnd -> LocalDate.now());
-
-   public static final Gen<LocalDateTime> LOCALDATETIME_NOW = apply(rnd -> LocalDateTime.now());
-
-   public static final Gen<Instant> INSTANT_NOW = apply(rnd -> Instant.now());
-*/   
-   
    private static final Gen<Integer> INT           = apply(rnd -> rnd.nextInt());
-   private static final Gen<Double>  DOUBLE        = apply(rnd -> rnd.nextDouble());
    private static final Gen<Long>    LONG          = apply(rnd -> rnd.nextLong());
    private static final Gen<Float>   FLOAT         = apply(rnd -> rnd.nextFloat());
+   private static final Gen<Double>  DOUBLE        = apply(rnd -> rnd.nextDouble());
    private static final Gen<Boolean> BOOLEAN       = apply(rnd -> rnd.nextBoolean());
    private static final Gen<java.util.UUID> UUID   = supply(java.util.UUID::randomUUID);
-   private static final Gen<String> IDENTIFIER     = UUID.map(uuid -> uuid.toString());
+   private static final Gen<String> IDENTIFIER     = UUID.map(java.util.UUID::toString);
    private static final Gen<LocalDate> LD_NOW      = supply(LocalDate::now);
    private static final Gen<LocalDateTime> LDT_NOW = supply(LocalDateTime::now);
    private static final Gen<Instant> INST_NOW      = supply(Instant::now);
-   
 
    public static final Gen<Integer> ints(){ return INT; } 
 
@@ -157,37 +135,55 @@ abstract class Gen<T>
    public static final Gen<LocalDateTime> localDateTimeNow(){ return LDT_NOW; }
 
    public static final Gen<Instant> intantNow(){ return INST_NOW; }
+
+
+   private static final List<String> ALPHABET = Stream.of(
+     "a","b","c","d","e", "A","B","C","D","E",
+     "f","g","h","i","j", "F","G","H","I","J",
+     "k","l","m","n","o", "K","L","M","N","O",
+     "p","q","r","s","t", "P","Q","R","S","T",
+     "u","v","w","x","y", "U","V","W","X","Y",
+     "z",                 "Z"
+   ).collect(toList());
+
+   private static final List<String> DIGITS = Stream.of(
+     "0","1","2","3","4","5","6","7","8","9" 
+   ).collect(toList());
+
+
+   private static final List<String> ALPHA_NUMERIC = Stream.concat(
+     ALPHABET.stream(), DIGITS.stream()
+   ).collect(toList());
    
 
+   public static Gen<String> letters(int length){
+     return stream(oneOf(ALPHABET))
+                  .map(s -> s.limit(length).collect(joining()));
+   }  
+ 
+   public static Gen<String> numeric(int length){
+     return stream(oneOf(DIGITS))
+                  .map(s -> s.limit(length).collect(joining()));
+   }  
+ 
+   public static Gen<String> alphaNumeric(int length){
+     return stream(oneOf(ALPHA_NUMERIC))
+                  .map(s -> s.limit(length).collect(joining()));
+   }  
+ 
+
    public static Gen<Integer> between(int start, int endExcl){
-/*
-     if (endExcl < start){
-        throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
-     }
-*/
      return iterate(new Random(42).ints(start, endExcl).iterator());
-//     return apply(rnd -> { return rnd.nextInt(endExcl-start) + start; } );
    }
 
 
    public static Gen<Long> between(long start, long endExcl){
-/*
-     if (endExcl < start){
-        throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
-     }
-*/
      return iterate(new Random(42).longs(start, endExcl).iterator());
    }
 
 
    public static Gen<Double> between(double start, double end){
-/*
-     if (end < start){
-        throw new IllegalArgumentException("Interval upper bound must be larger that lower bound");
-     }
-*/
      return iterate(new Random(42).doubles(start,end).iterator());
-//     return apply(rnd -> { return rnd.nextDouble()*(end-start) + start; } );
    }
 
 
@@ -310,9 +306,9 @@ throw new RuntimeException("TODO");
    //--------------------------------------------------------------------------
    public static <A,B,T> Gen<T> lift
    (
-     Gen<A> genA,
-     Gen<B> genB,
-     BiFunction<A,B,T> f
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     BiFunction<? super A,? super B,? extends T> f
    ){
      return genA.flatMap(a -> genB.map(b -> f.apply(a,b)));
    }
@@ -320,10 +316,10 @@ throw new RuntimeException("TODO");
 
    public static <A,B,C,T> Gen<T> lift
    (
-     Gen<A> genA,
-     Gen<B> genB,
-     Gen<C> genC,
-     Function3<A,B,C,T> f
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC,
+     Function3<? super A,? super B,? super C,? extends T> f
    ){
      return genA.flatMap(
               a -> genB.flatMap(
@@ -334,11 +330,11 @@ throw new RuntimeException("TODO");
 
    public static <A,B,C,D,T> Gen<T> lift
    (
-     Gen<A> genA,
-     Gen<B> genB,
-     Gen<C> genC,
-     Gen<D> genD,
-     Function4<A,B,C,D,T> f
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC,
+     Gen<? extends D> genD,
+     Function4<? super A,? super B,? super C,? super D,? extends T> f
    ){
      return genA.flatMap(
               a -> genB.flatMap(
@@ -350,12 +346,12 @@ throw new RuntimeException("TODO");
 
    public static <A,B,C,D,E,T> Gen<T> lift
    (
-     Gen<A> genA,
-     Gen<B> genB,
-     Gen<C> genC,
-     Gen<D> genD,
-     Gen<E> genE,
-     Function5<A,B,C,D,E,T> f
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC,
+     Gen<? extends D> genD,
+     Gen<? extends E> genE,
+     Function5<? super A,? super B,? super C,? super D,? super E,? extends T> f
    ){
      return genA.flatMap(
               a -> genB.flatMap(

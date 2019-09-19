@@ -47,6 +47,23 @@ public final class Tests
 
 
     @Test
+    public void testStringGen(){
+
+      int n = 14;
+
+      Gen<String> alphaNums = Gen.alphaNumeric(n);
+
+      assertTrue(
+        Stream.generate(() -> alphaNums.next(RND))
+              .limit(50)
+              .allMatch(s -> s.length() == n 
+                        && s.matches("^[a-zA-Z0-9]+$"))
+      );
+
+    }
+
+
+    @Test
     public void testFiltering(){
 
       Gen<Integer> evens = Gen.index(0)

@@ -21,7 +21,11 @@ sealed trait Gen[T]
 {
 
   def next(implicit rnd: Random): T
-
+/*
+  def filter(p: T => Boolean): Gen[T] = {
+    Gen { rnd => Gen.doFilter(this,p)(rnd) }
+  }
+*/
   def map[U](
     f: T => U
   ): Gen[U] = Gen(rnd => f(this.next(rnd)))
@@ -37,30 +41,43 @@ sealed trait Gen[T]
 object Gen
 {
 
-  def const[T](t: => T): Gen[T] = apply { rnd => t }
+  @annotation.tailrec
+  protected def doFilter[T](
+    gen: Gen[T],
+    p: T => Boolean
+  )(
+    rnd: Random
+  ): T = {
+    val t = gen.next(rnd)
+    if (p(t)) t
+    else doFilter(gen,p)(rnd)
+  }
 
-  val int: Gen[Int] = apply { rnd => rnd.nextInt }
 
-  val long: Gen[Long] = apply { rnd => rnd.nextLong }
+  def const[T](t: => T): Gen[T] = Gen { () => t }
 
-  val double: Gen[Double] = apply { rnd => rnd.nextDouble }
+  val int: Gen[Int] = Gen { rnd => rnd.nextInt }
 
-  val gaussian: Gen[Double] = apply { rnd => rnd.nextGaussian }
+  val long: Gen[Long] = Gen { rnd => rnd.nextLong }
 
-  val float: Gen[Float] = apply { rnd => rnd.nextFloat }
+  val double: Gen[Double] = Gen { rnd => rnd.nextDouble }
+
+  val gaussian: Gen[Double] = Gen { rnd => rnd.nextGaussian }
+
+  val float: Gen[Float] = Gen { rnd => rnd.nextFloat }
   
-  val boolean: Gen[Boolean] = apply { rnd => Random.nextBoolean }
+  val boolean: Gen[Boolean] = Gen { rnd => Random.nextBoolean }
 
-  val char: Gen[Char] = apply { rnd => rnd.nextPrintableChar }
+  val char: Gen[Char] = Gen { rnd => rnd.nextPrintableChar }
   
-  val uuid: Gen[UUID] = apply { rnd => UUID.randomUUID }
+  val uuid: Gen[UUID] = Gen { () => UUID.randomUUID }
 
   val identifier: Gen[String] = uuid.map(_.toString)
 
 
   def option[T](
     gen: Gen[T]
-  ): Gen[Option[T]] = apply {
+  ): Gen[Option[T]] = Gen {
     rnd => Option(rnd.nextBoolean)
                  .filter(b => b)
                  .map(_ => gen.next(rnd))
@@ -69,7 +86,7 @@ object Gen
   def either[T,U](
     tGen: Gen[T],
     uGen: Gen[U]
-  ): Gen[Either[T,U]] = apply {
+  ): Gen[Either[T,U]] = Gen {
     rnd => Either.cond(rnd.nextBoolean,
                        uGen.next(rnd),
                        tGen.next(rnd))
@@ -82,7 +99,7 @@ object Gen
     implicit
     head: Lazy[Gen[H]],
     tail: Gen[T]
-  ): Gen[H :: T] = apply {
+  ): Gen[H :: T] = Gen {
     rnd => head.value.next(rnd) :: tail.next(rnd)
   }
 
@@ -91,7 +108,7 @@ object Gen
     implicit
     gen: Generic.Aux[T,R],
     g: Lazy[Gen[R]]
-  ): Gen[T] = apply {
+  ): Gen[T] = Gen {
     rnd => gen.from(g.value.next(rnd))
   }
   
@@ -103,28 +120,64 @@ object Gen
   def of[T](implicit gen: Gen[T]): Gen[T] = gen
 
 
+  def apply[T](f: () => T): Gen[T] = new Gen[T]{
+    def next(implicit rnd: Random): T = f()
+  }
+
   def apply[T](f: Random => T): Gen[T] = new Gen[T]{
     def next(implicit rnd: Random): T = f(rnd)
   }
 
-  def between(start: Int, endExcl: Int): Gen[Int] = apply(
+
+  def between(start: Int, endExcl: Int): Gen[Int] = Gen { 
     rnd => rnd.nextInt(endExcl-start) + start
+  }
+
+/*
+  TODO
+  def between(start: Long, endExcl: Long): Gen[Long] = {
+    long.filter(l => l >= start && l < endExcl)
+  }
+*/
+
+  def between(start: Float, end: Float): Gen[Float] = Gen(
+    rnd => rnd.nextFloat*(end-start) + start
   )
 
-  def between(start: Float, end: Float): Gen[Float] = apply(
-    rnd => rnd.nextFloat*end + start
+  def between(start: Double, end: Double): Gen[Double] = Gen(
+    rnd => rnd.nextDouble*(end-start) + start
   )
 
-  def between(start: Double, end: Double): Gen[Double] = apply(
-    rnd => rnd.nextDouble*end + start
-  )
+
+  def iterate[T](
+    it: Iterable[T]
+  ): Gen[T] = iterate(it.iterator)
+
+
+  def iterate[T](
+    it: Iterator[T]
+  ): Gen[T] = Gen { () => it.next }
+
+
+  def iterate[T](
+    init: T
+  )(
+    f: T => T
+  ): Gen[T] = iterate(Stream.iterate(init)(f))
+
+
+  def indices(
+    i: Int
+  ): Gen[Int] = iterate(Stream.from(i)) 
+
+  def indices: Gen[Int] = indices(0)
 
 
   def oneOf[T](
     ts: Seq[T]
-  ): Gen[T] = apply(
+  ): Gen[T] = Gen {
     rnd => ts.iterator.drop(rnd.nextInt(ts.size)).next
-  )
+  }
 
   def oneOf[T](
     t0: T, t1: T, ts: T*
@@ -133,39 +186,42 @@ object Gen
 
   def infiniteStream[T](
     gen: Gen[T]
-  ): Gen[Stream[T]] = apply(
+  ): Gen[Stream[T]] = Gen {
     rnd => Stream.continually(gen.next(rnd))
-  )  
+  }
     
   def listOf[T](
     size: Int,
     gen: Gen[T]
-  ): Gen[List[T]] = apply(
+  ): Gen[List[T]] = Gen {
     rnd => List.fill(size)(gen.next(rnd))
-  )
+  }
 
   def list[T](
+    sizes: Gen[Int],
     gen: Gen[T]
-  ): Gen[List[T]] = apply {
-    rnd => listOf(between(42,100).next(rnd),gen).next(rnd)
+  ): Gen[List[T]] = Gen {
+    rnd => List.fill(sizes.next(rnd))(gen.next(rnd))
   } 
   
 
   def nonEmptyListOf[T](
     size: Int,
     gen: Gen[T]
-  ): Gen[NonEmptyList[T]] = apply(
+  ): Gen[NonEmptyList[T]] = Gen {
     rnd => NonEmptyList.fromListUnsafe(listOf(size,gen).next(rnd))
-  )
+  }
+
 
   def nonEmptyList[T](
+    sizes: Gen[Int],
     gen: Gen[T]
-  ): Gen[NonEmptyList[T]] = apply {
-    rnd => nonEmptyListOf(between(42,100).next(rnd),gen).next(rnd)
+  ): Gen[NonEmptyList[T]] = Gen {
+    rnd => nonEmptyListOf(sizes.next(rnd),gen).next(rnd)
   } 
 
 
-  def positiveInt: Gen[Int] = apply { rnd =>
+  def positiveInt: Gen[Int] = Gen { rnd =>
     val i = rnd.nextInt
     if (i > 0) i
     else -i
