@@ -161,8 +161,8 @@ public final class Patient
 // ----------------------------------------------------------------------------
 
 Gen<Patient> genpat = Gen.lift(
-  Gen.idStrings(),                     // Gen of identifier Strings
-  Gen.oneOf(Patient.Gender.MALE,       // Gen of velues from closed value set: here Gender
+  Gen.uuidStrings(),                   // Gen of identifier Strings
+  Gen.oneOf(Patient.Gender.MALE,       // Gen of values from closed value set: here Gender
             Patient.Gender.FEMALE,
             Patient.Gender.OTHER,
             Patient.Gender.UNKNOWN),

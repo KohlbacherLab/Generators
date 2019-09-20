@@ -36,47 +36,6 @@ abstract class Gen<T>
    private Gen(){ }
 
 
-   @FunctionalInterface
-   public interface Function3<A,B,C,T>{
-     public T apply(A a, B b, C c);
-   }
-
-   @FunctionalInterface
-   public interface Function4<A,B,C,D,T>{
-     public T apply(A a, B b, C c, D d);
-   }
-
-   @FunctionalInterface
-   public interface Function5<A,B,C,D,E,T>{
-     public T apply(A a, B b, C c, D d, E e);
-   }
-
-   @FunctionalInterface
-   public interface Function6<A,B,C,D,E,F,T>{
-     public T apply(A a, B b, C c, D d, E e, F f);
-   }
-
-
-   //--------------------------------------------------------------------------
-   // Gen constructor methods
-   //--------------------------------------------------------------------------
-   public static <T> Gen<T> supply(Supplier<? extends T> s)
-   {
-      return apply(rnd -> s.get());
-   }
-
-   public static <T> Gen<T> apply(Function<? super Random,? extends T> f)
-   {
-     return new Gen<T>(){
-
-       @Override
-       public T next(Random rnd){
-         return f.apply(rnd);
-       }
-     };
-   }
-
-
    //--------------------------------------------------------------------------
    // Gen<T> class public interface
    //--------------------------------------------------------------------------
@@ -102,13 +61,37 @@ abstract class Gen<T>
    {
      return apply(rnd -> f.apply(this.next(rnd)).next(rnd));
    }
+
+
    //--------------------------------------------------------------------------
+   // Gen constructor methods
+   //--------------------------------------------------------------------------
+   public static <T> Gen<T> supply(Supplier<? extends T> s)
+   {
+      return apply(rnd -> s.get());
+   }
+
+   public static <T> Gen<T> apply(Function<? super Random,? extends T> f)
+   {
+     return new Gen<>(){
+
+       @Override
+       public T next(Random rnd){
+         return f.apply(rnd);
+       }
+     };
+   }
+
+
+   //--------------------------------------------------------------------------
+   // Primitive/simple type constructors
    //--------------------------------------------------------------------------
 
    private static final Gen<Integer> INT           = apply(rnd -> rnd.nextInt());
    private static final Gen<Long>    LONG          = apply(rnd -> rnd.nextLong());
    private static final Gen<Float>   FLOAT         = apply(rnd -> rnd.nextFloat());
    private static final Gen<Double>  DOUBLE        = apply(rnd -> rnd.nextDouble());
+   private static final Gen<Double>  GAUSSIANS     = apply(rnd -> rnd.nextGaussian());
    private static final Gen<Boolean> BOOLEAN       = apply(rnd -> rnd.nextBoolean());
    private static final Gen<java.util.UUID> UUID   = supply(java.util.UUID::randomUUID);
    private static final Gen<String> IDENTIFIER     = UUID.map(java.util.UUID::toString);
@@ -128,7 +111,7 @@ abstract class Gen<T>
 
    public static final Gen<java.util.UUID> uuids(){ return UUID; }
 
-   public static final Gen<String> idStrings(){ return IDENTIFIER; }   
+   public static final Gen<String> uuidStrings(){ return IDENTIFIER; }   
 
    public static final Gen<LocalDate> localDateNow(){ return LD_NOW; }      
 
@@ -207,13 +190,13 @@ abstract class Gen<T>
    }
 
 
-   public static Gen<Integer> index(int start){
+   public static Gen<Integer> indicesFrom(int start){
      return iterate(start, i -> i+1);
    }
 
 
-   public static Gen<Integer> index(){
-     return index(0);
+   public static Gen<Integer> indices(){
+     return indicesFrom(0);
    }
 
 
@@ -304,6 +287,28 @@ throw new RuntimeException("TODO");
    //--------------------------------------------------------------------------
    // Combinators to provide "for comprehension"-like syntax
    //--------------------------------------------------------------------------
+
+   @FunctionalInterface
+   public interface Function3<A,B,C,T>{
+     public T apply(A a, B b, C c);
+   }
+
+   @FunctionalInterface
+   public interface Function4<A,B,C,D,T>{
+     public T apply(A a, B b, C c, D d);
+   }
+
+   @FunctionalInterface
+   public interface Function5<A,B,C,D,E,T>{
+     public T apply(A a, B b, C c, D d, E e);
+   }
+
+   @FunctionalInterface
+   public interface Function6<A,B,C,D,E,F,T>{
+     public T apply(A a, B b, C c, D d, E e, F f);
+   }
+
+
    public static <A,B,T> Gen<T> lift
    (
      Gen<? extends A> genA,
@@ -372,7 +377,7 @@ throw new RuntimeException("TODO");
    }
 
 
-   private static Map<Type,Gen<?>> BASIC_GENS =
+   private static Map<Type,Gen<?>> DERIVED_GENS =
      Stream.of(entry(int.class,            INT),
                entry(double.class,         DOUBLE),
                entry(boolean.class,        BOOLEAN),
@@ -387,15 +392,15 @@ throw new RuntimeException("TODO");
 
 
    public static <T> void register(Gen<T> gen, Class<T> c){
-     BASIC_GENS.put(c,gen);
+     DERIVED_GENS.put(c,gen);
    } 
 
    public static <T> Gen<T> of(Class<T> cl){
-     return (Gen<T>)BASIC_GENS.computeIfAbsent(cl, Gen::deriveFor);
+     return (Gen<T>)DERIVED_GENS.computeIfAbsent(cl, Gen::deriveFor);
    }
 
    private static <T> Gen<T> of(Type t){
-     return (Gen<T>)BASIC_GENS.computeIfAbsent(t, Gen::deriveFor);
+     return (Gen<T>)DERIVED_GENS.computeIfAbsent(t, Gen::deriveFor);
    }
 
    private static Gen<?> deriveFor(Type t){
