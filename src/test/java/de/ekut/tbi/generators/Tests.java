@@ -6,6 +6,7 @@ import static org.junit.Assert.*;
 
 import java.util.Random;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import java.time.*;
@@ -93,7 +94,8 @@ public final class Tests
   @Test
   public void testListGen(){
 
-    Gen<List<Integer>> gen = Gen.listOf(15,Gen.between(10,42));
+//    Gen<List<Integer>> gen = Gen.listOf(15,Gen.between(10,42));
+    Gen<List<Integer>> gen = Gen.collectionOf(List.class,15,Gen.between(10,42));
 
     List<Integer> ints = gen.next(RND);
 
@@ -102,6 +104,23 @@ public final class Tests
     assertTrue(ints.stream()
                    .allMatch(i -> i >= 0 && i < 42) );
   }
+
+
+  @Test
+  public void testMapGen(){
+
+    int n = 10;
+
+    Gen<Map<Integer,String>> maps = Gen.mapOf(n,
+                                              Gen.indices(),
+                                              Gen.alphaNumeric(15));
+
+    Map<Integer,String> map = maps.next(RND);
+
+    assertTrue(map.size() == n);
+
+  }
+
 
   @Test
   public void testFooGen(){

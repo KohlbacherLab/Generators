@@ -6,6 +6,7 @@ import java.util.UUID
 import scala.util.{
   Either, Random
 }
+import scala.collection.generic.CanBuildFrom
 
 import cats.data.{
   NonEmptyList
@@ -38,7 +39,6 @@ sealed trait Gen[T]
   ): Gen[U] = Gen(rnd => f(this.next(rnd)).next(rnd)) 
 
 }
-
 
 
 object Gen
@@ -251,10 +251,46 @@ object Gen
   def list[T](
     sizes: Gen[Int],
     gen: Gen[T]
-  ): Gen[List[T]] = Gen {
-    rnd => List.fill(sizes.next(rnd))(gen.next(rnd))
+  ): Gen[List[T]] = {
+    sizes.flatMap(listOf(_,gen))
   } 
   
+  def mapOf[K,V](
+    size: Int,
+    keys: Gen[K],
+    values: Gen[V]
+  ): Gen[Map[K,V]] = Gen {
+    rnd => Stream.fill(size)((keys.next(rnd),values.next(rnd))).toMap
+  }
+
+  def map[K,V](
+    sizes: Gen[Int],
+    keys: Gen[K],
+    values: Gen[V]
+  ): Gen[Map[K,V]] = {
+    sizes.flatMap(mapOf(_,keys,values))
+  }
+
+  def collectionOf[C[_],T](
+    size: Int,
+    gen: Gen[T]
+  )(
+    implicit
+    cbf: CanBuildFrom[Nothing, T, C[T]]
+  ): Gen[C[T]] = {
+    listOf(size,gen).map(_.to[C])
+  }
+
+  def collection[C[_],T](
+    sizes: Gen[Int],
+    gen: Gen[T]
+  )(
+    implicit
+    cbf: CanBuildFrom[Nothing, T, C[T]]
+  ): Gen[C[T]] = {
+    sizes.flatMap(collectionOf(_,gen))
+  }
+
 
   def nonEmptyListOf[T](
     size: Int,
@@ -263,12 +299,11 @@ object Gen
     rnd => NonEmptyList.fromListUnsafe(listOf(size,gen).next(rnd))
   }
 
-
   def nonEmptyList[T](
     sizes: Gen[Int],
     gen: Gen[T]
-  ): Gen[NonEmptyList[T]] = Gen {
-    rnd => nonEmptyListOf(sizes.next(rnd),gen).next(rnd)
+  ): Gen[NonEmptyList[T]] = {
+    sizes.flatMap(nonEmptyListOf(_,gen))
   } 
 
 

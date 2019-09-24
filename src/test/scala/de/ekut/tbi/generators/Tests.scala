@@ -130,7 +130,7 @@ class Tests extends FlatSpec
        d <- Gen.doubles
      } yield ((i,d))
 
-     val pairs = Gen.listOf(10,pairGen).next
+     val pairs = Gen.collection[Set,(Int,Double)](Gen.between(5,10),pairGen).next
   }
 
 
@@ -150,7 +150,6 @@ class Tests extends FlatSpec
       f <- Gen.of[Name.Family]
     } yield (Name(g,f))
 
-
     val patGen = for {
       id     <- Gen.uuids.map(PatId)
       gender <- Gen.of[Gender]
@@ -163,7 +162,6 @@ class Tests extends FlatSpec
     val pats = List.fill(10)(patGen.next)
 
   }
-
 
 
 }

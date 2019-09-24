@@ -7,6 +7,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import static java.util.AbstractMap.SimpleImmutableEntry;
@@ -18,8 +23,10 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.joining;
 
 import java.time.*;
@@ -209,6 +216,70 @@ abstract class Gen<T>
 
    public static <T> Gen<List<T>> listOf(int n, Gen<T> gen){
      return stream(gen).map(s -> s.limit(n).collect(toList()));
+   }
+
+   public static <T> Gen<List<T>> list(
+     Gen<Integer> sizes,
+     Gen<T> gen
+   ){
+     return sizes.flatMap(s -> listOf(s,gen));
+   }
+
+
+   private static Map.Entry<Class<? extends Collection>,Supplier<? extends Collection>> builderEntry
+   (
+     Class<? extends Collection> cl,
+     Supplier<? extends Collection> s
+   ){
+     return entry(cl,s);
+   }
+
+   private static final Map<Class<? extends Collection>,Supplier<? extends Collection>> COLLECTION_BUILDERS =
+     Stream.of(
+       builderEntry(List.class,       ArrayList::new),
+       builderEntry(LinkedList.class, LinkedList::new),
+       builderEntry(Set.class,        HashSet::new),
+       builderEntry(HashSet.class,    HashSet::new),
+       builderEntry(TreeSet.class,    TreeSet::new)
+     ).collect(toMap(Map.Entry::getKey,Map.Entry::getValue));
+
+   public static void registerBuilder(
+     Class<? extends Collection> cl,
+     Supplier<? extends Collection> s
+   ){
+     COLLECTION_BUILDERS.put(cl,s);
+   }
+
+
+   public static <T,C extends Collection<T>> Gen<C> collectionOf(
+     Class<C> cl,
+     int n,
+     Gen<T> gen
+   ){
+     return stream(gen).map(s -> s.limit(n)
+                                  .collect(Collectors.toCollection((Supplier<? extends C>)COLLECTION_BUILDERS.get(cl))));
+   }
+
+   public static <T,C extends Collection<T>> Gen<C> collection(
+     Class<C> cl,
+     Gen<Integer> sizes,
+     Gen<T> gen
+   ){
+     return sizes.flatMap(s -> collectionOf(cl,s,gen));
+   }
+
+   public static <K,V> Gen<Map<K,V>> mapOf(
+     int n,
+     Gen<K> keys,
+     Gen<V> values
+   ){
+     return stream(
+       Gen.lift(
+         keys,
+         values,
+         Gen::entry
+       )
+     ).map(s -> s.limit(n).collect(toMap(Map.Entry::getKey,Map.Entry::getValue)));
    }
 
 
