@@ -33,7 +33,7 @@ object DateTimeGens
   val instantNow: Gen[Instant] = Gen { () => Instant.now }
 
 
-  val dayOfWeek: Gen[DayOfWeek]= 
+  val dayOfWeek: Gen[DayOfWeek] = 
     Gen.oneOf(
       MONDAY,TUESDAY,WEDNESDAY,
       THURSDAY,FRIDAY,SATURDAY,SUNDAY
@@ -49,7 +49,7 @@ object DateTimeGens
 
 
   val localDate: Gen[LocalDate] = Gen {
-    rnd => LocalDate.of(Gen.int.next(rnd),
+    rnd => LocalDate.of(Gen.ints.next(rnd),
                         month.next(rnd),
                         Gen.between(1,28).next(rnd))
   }

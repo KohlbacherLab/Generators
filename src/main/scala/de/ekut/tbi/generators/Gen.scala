@@ -12,7 +12,8 @@ import cats.data.{
 }
 
 import shapeless.{
-  HList, HNil, ::, Generic, Lazy
+  HList, HNil, ::, Generic, Lazy,
+  Coproduct, CNil, :+:, Inl, Inr
 }
 
 
@@ -21,11 +22,13 @@ sealed trait Gen[T]
 {
 
   def next(implicit rnd: Random): T
+
 /*
   def filter(p: T => Boolean): Gen[T] = {
     Gen { rnd => Gen.doFilter(this,p)(rnd) }
   }
 */
+
   def map[U](
     f: T => U
   ): Gen[U] = Gen(rnd => f(this.next(rnd)))
@@ -56,24 +59,53 @@ object Gen
 
   def const[T](t: => T): Gen[T] = Gen { () => t }
 
-  val int: Gen[Int] = Gen { rnd => rnd.nextInt }
+  val ints: Gen[Int] = Gen { rnd => rnd.nextInt }
 
-  val long: Gen[Long] = Gen { rnd => rnd.nextLong }
+  val longs: Gen[Long] = Gen { rnd => rnd.nextLong }
 
-  val double: Gen[Double] = Gen { rnd => rnd.nextDouble }
+  val doubles: Gen[Double] = Gen { rnd => rnd.nextDouble }
 
-  val gaussian: Gen[Double] = Gen { rnd => rnd.nextGaussian }
+  val gaussians: Gen[Double] = Gen { rnd => rnd.nextGaussian }
 
-  val float: Gen[Float] = Gen { rnd => rnd.nextFloat }
+  val floats: Gen[Float] = Gen { rnd => rnd.nextFloat }
   
-  val boolean: Gen[Boolean] = Gen { rnd => Random.nextBoolean }
+  val booleans: Gen[Boolean] = Gen { rnd => Random.nextBoolean }
 
-  val char: Gen[Char] = Gen { rnd => rnd.nextPrintableChar }
+  val chars: Gen[Char] = Gen { rnd => rnd.nextPrintableChar }
   
-  val uuid: Gen[UUID] = Gen { () => UUID.randomUUID }
+  val uuids: Gen[UUID] = Gen { () => UUID.randomUUID }
 
-  val identifier: Gen[String] = uuid.map(_.toString)
+  val uuidStrings: Gen[String] = uuids.map(_.toString)
 
+
+  private val alphabet = List(
+    "a","b","c","d","e", "A","B","C","D","E",
+    "f","g","h","i","j", "F","G","H","I","J",
+    "k","l","m","n","o", "K","L","M","N","O",
+    "p","q","r","s","t", "P","Q","R","S","T",
+    "u","v","w","x","y", "U","V","W","X","Y",
+    "z",                 "Z"
+  )
+
+  private val digits = List(
+    "0","1","2","3","4","5","6","7","8","9"
+  )
+
+  def letters(n: Int): Gen[String] =
+    stream(oneOf(alphabet))
+          .map(s => s.take(n)
+                     .foldLeft(new String)(_ + _))
+  
+  def numeric(n: Int): Gen[String] =
+    stream(oneOf(digits))
+          .map(s => s.take(n)
+                     .foldLeft(new String)(_ + _))
+  
+  def alphaNumeric(n: Int): Gen[String] =
+    stream(oneOf(alphabet ++ digits))
+          .map(s => s.take(n)
+                     .foldLeft(new String)(_ + _))
+  
 
   def option[T](
     gen: Gen[T]
@@ -104,7 +136,26 @@ object Gen
   }
 
 
-  implicit def generic[T <: Product,R](
+  implicit val cnilGen: Gen[CNil] = Gen { rnd => throw new RuntimeException("Never reached") }
+
+  implicit def coproductGen[H, T <: Coproduct](
+    implicit
+    head: Lazy[Gen[H]],
+    tail: Gen[T]
+  ): Gen[H :+: T] = Gen {
+    rnd => if (rnd.nextBoolean) Inl(head.value.next(rnd))
+           else                 Inr(tail.next(rnd))
+  }
+
+  implicit def coproductGenTerminal[H](
+    implicit
+    head: Lazy[Gen[H]]
+  ): Gen[H :+: CNil] = Gen {
+    rnd => Inl(head.value.next(rnd))
+  }
+
+
+  implicit def genericGen[T,R](
     implicit
     gen: Generic.Aux[T,R],
     g: Lazy[Gen[R]]
@@ -166,11 +217,11 @@ object Gen
   ): Gen[T] = iterate(Stream.iterate(init)(f))
 
 
-  def indices(
+  def indicesFrom(
     i: Int
   ): Gen[Int] = iterate(Stream.from(i)) 
 
-  def indices: Gen[Int] = indices(0)
+  def indices: Gen[Int] = indicesFrom(0)
 
 
   def oneOf[T](
@@ -184,7 +235,7 @@ object Gen
   ): Gen[T] = oneOf(t0 +: t1 +: ts)
 
 
-  def infiniteStream[T](
+  def stream[T](
     gen: Gen[T]
   ): Gen[Stream[T]] = Gen {
     rnd => Stream.continually(gen.next(rnd))
@@ -221,7 +272,8 @@ object Gen
   } 
 
 
-  def positiveInt: Gen[Int] = Gen { rnd =>
+//  def positiveInts: Gen[Int] = ints.filter(_ > 0)
+  def positiveInts: Gen[Int] = Gen { rnd =>
     val i = rnd.nextInt
     if (i > 0) i
     else -i
