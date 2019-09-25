@@ -166,8 +166,8 @@ Gen<Patient> genpat = Gen.lift(
             Patient.Gender.FEMALE,
             Patient.Gender.OTHER,
             Patient.Gender.UNKNOWN),
-  Gen.between(LocalDate.of(1979,1,1),  // Gen of LocalDate between given start and end
-              LocalDate.of(1990,1,1)),
+  Gen.localDatesBetween(LocalDate.of(1979,1,1),  // Gen of LocalDate between given start and end
+                        LocalDate.of(1990,1,1)),
   Gen.optional(Gen.localDateNow()),    // Gen of Optional type: here LocalDate
   Patient::of                          // Function to map respective Gen outputs to: here Patient factory method
 );

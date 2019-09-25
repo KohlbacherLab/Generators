@@ -180,22 +180,21 @@ object Gen
   }
 
 
-  def between(start: Int, endExcl: Int): Gen[Int] = Gen { 
+  def intsBetween(start: Int, endExcl: Int): Gen[Int] = Gen { 
     rnd => rnd.nextInt(endExcl-start) + start
   }
 
-/*
-  TODO
-  def between(start: Long, endExcl: Long): Gen[Long] = {
-    long.filter(l => l >= start && l < endExcl)
-  }
-*/
 
-  def between(start: Float, end: Float): Gen[Float] = Gen(
+  def longsBetween(start: Long, endExcl: Long): Gen[Long] =
+    doublesBetween(start.toDouble,endExcl.toDouble)
+                 .map(_.toLong)
+
+
+  def floatsBetween(start: Float, end: Float): Gen[Float] = Gen(
     rnd => rnd.nextFloat*(end-start) + start
   )
 
-  def between(start: Double, end: Double): Gen[Double] = Gen(
+  def doublesBetween(start: Double, end: Double): Gen[Double] = Gen(
     rnd => rnd.nextDouble*(end-start) + start
   )
 

@@ -39,7 +39,7 @@ public final class Tests
   @Test
   public void testIntGen(){
 
-    Gen<Integer> gen = Gen.between(10,42);
+    Gen<Integer> gen = Gen.intsBetween(10,42);
 
 /*
     Prop<Integer> within10to42 = Prop.forAll(i -> i >= 0 && i < 42);
@@ -95,7 +95,7 @@ public final class Tests
   public void testListGen(){
 
 //    Gen<List<Integer>> gen = Gen.listOf(15,Gen.between(10,42));
-    Gen<List<Integer>> gen = Gen.collectionOf(List.class,15,Gen.between(10,42));
+    Gen<List<Integer>> gen = Gen.collectionOf(List.class,15,Gen.intsBetween(10,42));
 
     List<Integer> ints = gen.next(RND);
 
@@ -151,7 +151,9 @@ public final class Tests
       Gen.uuidStrings(),
       Gen.oneOf(Patient.Gender.MALE,  Patient.Gender.FEMALE,
                 Patient.Gender.OTHER, Patient.Gender.UNKNOWN),
-      Gen.between(LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)),
+      Gen.localDatesBetween(
+            LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
+          ),
       Gen.optional(Gen.localDateNow()),
       Patient::of
     );

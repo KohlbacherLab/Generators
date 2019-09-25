@@ -123,6 +123,39 @@ class Tests extends FlatSpec
   }
 
 
+  "Long generation within interval" should "work" in {
+
+    val start: Long = 1000L
+    val end: Long = 10000L
+
+    val longsInInterval = Gen.longsBetween(start,end)
+
+    assert(
+      Stream.fill(500)(longsInInterval.next)
+            .forall(l => l >= start && l < end)
+    )
+
+  }
+
+
+  "LocalDate generation within interval" should "work" in {
+
+    val start = LocalDate.of(1980,1,1)
+    val end   = LocalDate.of(1990,1,1)
+
+    val datesInInterval = DateTimeGens.localDatesBetween(start,end)
+
+    assert(
+      Stream.fill(500)(datesInInterval.next)
+            .forall(d => (d.isAfter(start) || d.isEqual(start))
+                         && (d.isBefore(end) || d.isEqual(end)))
+    )
+
+  }
+
+
+
+
   "Gen[(Int,Double)]" should "work" in {
     
      val pairGen = for {
@@ -130,7 +163,7 @@ class Tests extends FlatSpec
        d <- Gen.doubles
      } yield ((i,d))
 
-     val pairs = Gen.collection[Set,(Int,Double)](Gen.between(5,10),pairGen).next
+     val pairs = Gen.collection[Set,(Int,Double)](Gen.intsBetween(5,10),pairGen).next
   }
 
 

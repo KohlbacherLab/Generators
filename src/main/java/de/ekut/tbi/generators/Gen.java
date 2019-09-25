@@ -162,17 +162,17 @@ abstract class Gen<T>
    }  
  
 
-   public static Gen<Integer> between(int start, int endExcl){
+   public static Gen<Integer> intsBetween(int start, int endExcl){
      return iterate(new Random(42).ints(start, endExcl).iterator());
    }
 
 
-   public static Gen<Long> between(long start, long endExcl){
+   public static Gen<Long> longsBetween(long start, long endExcl){
      return iterate(new Random(42).longs(start, endExcl).iterator());
    }
 
 
-   public static Gen<Double> between(double start, double end){
+   public static Gen<Double> doublesBetween(double start, double end){
      return iterate(new Random(42).doubles(start,end).iterator());
    }
 
@@ -342,16 +342,49 @@ throw new RuntimeException("TODO");
    ); 
 
 
-   public static final Gen<Month> MONTH = Gen.oneOf(
+   public static final Gen<Month> MONTH = Gen.oneOf
+   (
      Month.JANUARY, Month.FEBRUARY, Month.MARCH,
      Month.APRIL,   Month.MAY,      Month.JUNE,
      Month.JULY,    Month.AUGUST,   Month.SEPTEMBER,
      Month.OCTOBER, Month.NOVEMBER, Month.DECEMBER
    );
 
-   public static Gen<LocalDate> between(LocalDate start, LocalDate end){
-      return between(start.toEpochDay(),
-                     end.toEpochDay()).map(LocalDate::ofEpochDay);
+
+   public static Gen<LocalDate> localDatesBetween
+   (
+     LocalDate start,
+     LocalDate end
+   ){
+     return longsBetween(
+              start.toEpochDay(),
+              end.toEpochDay()
+            ).map(LocalDate::ofEpochDay);
+   }
+
+   public static Gen<LocalTime> localTimesBetween
+   (
+     LocalTime start,
+     LocalTime end
+   ){
+     return longsBetween(
+              start.toNanoOfDay(),
+              end.toNanoOfDay()
+            ).map(LocalTime::ofNanoOfDay);
+   }
+
+   public static Gen<LocalDateTime> localDateTimesBetween
+   (
+     LocalDateTime start,
+     LocalDateTime end
+   ){
+     return lift(
+              Gen.localDatesBetween(start.toLocalDate(),
+                                    end.toLocalDate()),
+              Gen.localTimesBetween(start.toLocalTime(),
+                                    end.toLocalTime()),
+              (d,t) -> LocalDateTime.of(d,t)
+            );
    }
 
 

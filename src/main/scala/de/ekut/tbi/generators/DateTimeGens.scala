@@ -8,6 +8,7 @@ import java.time.{
   Instant,
   LocalDate,
   LocalDateTime,
+  LocalTime,
   Month
 }
 
@@ -18,19 +19,42 @@ import Month._
 object DateTimeGens
 {
 
-/*
-  def between(
-    start: LocalDate,
-    end: LocalDate
-  ): Gen[LocalDate] = Gen.between(start.toEpochDay,
-                                  end.toEpochDay).map(LocalDate.ofEpochDay)
-*/
-
   val localDateNow: Gen[LocalDate] = Gen { () => LocalDate.now }
 
   val localDateTimeNow: Gen[LocalDateTime] = Gen { () => LocalDateTime.now }
 
   val instantNow: Gen[Instant] = Gen { () => Instant.now }
+
+
+  def localDatesBetween(
+    start: LocalDate,
+    end: LocalDate
+  ): Gen[LocalDate] = Gen.longsBetween(
+    start.toEpochDay,
+    end.toEpochDay
+  ).map(LocalDate.ofEpochDay)
+
+
+  def localTimesBetween(
+    start: LocalTime,
+    end: LocalTime
+  ): Gen[LocalTime] = Gen.intsBetween(
+    start.toSecondOfDay,
+    end.toSecondOfDay
+  )
+  .map(_.toLong)
+  .map(LocalTime.ofSecondOfDay)
+
+
+  def localDateTimesBetween(
+    start: LocalDateTime,
+    end: LocalDateTime
+  ): Gen[LocalDateTime] = for {
+    d <- localDatesBetween(start.toLocalDate,
+                           end.toLocalDate)
+    t <- localTimesBetween(start.toLocalTime,
+                           end.toLocalTime)
+  } yield (LocalDateTime.of(d,t))
 
 
   val dayOfWeek: Gen[DayOfWeek] = 
@@ -49,19 +73,24 @@ object DateTimeGens
 
 
   val localDate: Gen[LocalDate] = Gen {
-    rnd => LocalDate.of(Gen.ints.next(rnd),
-                        month.next(rnd),
-                        Gen.between(1,28).next(rnd))
+    rnd => LocalDate.of(
+      Gen.ints.next(rnd),
+      month.next(rnd),
+      Gen.intsBetween(1,28).next(rnd)
+    )
   }
+
 
   def localDate(
     y: Gen[Int],
     m: Gen[Month],
     d: Gen[Int]
   ): Gen[LocalDate] = Gen {
-    rnd => LocalDate.of(y.next(rnd),
-                        m.next(rnd),
-                        d.next(rnd))
+    rnd => LocalDate.of(
+      y.next(rnd),
+      m.next(rnd),
+      d.next(rnd)
+    )
   }
 
 
