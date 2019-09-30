@@ -26,6 +26,15 @@ object DateTimeGens
   val instantNow: Gen[Instant] = Gen { () => Instant.now }
 
 
+  def instantsBetween(
+    start: Instant,
+    end: Instant
+  ): Gen[Instant] = Gen.longsBetween(
+    start.toEpochMilli,
+    end.toEpochMilli
+  ).map(Instant.ofEpochMilli)
+
+
   def localDatesBetween(
     start: LocalDate,
     end: LocalDate
@@ -57,6 +66,7 @@ object DateTimeGens
   } yield (LocalDateTime.of(d,t))
 
 
+
   val dayOfWeek: Gen[DayOfWeek] = 
     Gen.oneOf(
       MONDAY,TUESDAY,WEDNESDAY,
@@ -81,7 +91,7 @@ object DateTimeGens
   }
 
 
-  def localDate(
+  def localDateOf(
     y: Gen[Int],
     m: Gen[Month],
     d: Gen[Int]

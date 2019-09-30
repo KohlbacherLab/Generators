@@ -226,46 +226,21 @@ abstract class Gen<T>
    }
 
 
-   private static Map.Entry<Class<? extends Collection>,Supplier<? extends Collection>> builderEntry
-   (
-     Class<? extends Collection> cl,
-     Supplier<? extends Collection> s
-   ){
-     return entry(cl,s);
-   }
-
-   private static final Map<Class<? extends Collection>,Supplier<? extends Collection>> COLLECTION_BUILDERS =
-     Stream.of(
-       builderEntry(List.class,       ArrayList::new),
-       builderEntry(LinkedList.class, LinkedList::new),
-       builderEntry(Set.class,        HashSet::new),
-       builderEntry(HashSet.class,    HashSet::new),
-       builderEntry(TreeSet.class,    TreeSet::new)
-     ).collect(toMap(Map.Entry::getKey,Map.Entry::getValue));
-
-   public static void registerBuilder(
-     Class<? extends Collection> cl,
-     Supplier<? extends Collection> s
-   ){
-     COLLECTION_BUILDERS.put(cl,s);
-   }
-
-
    public static <T,C extends Collection<T>> Gen<C> collectionOf(
-     Class<C> cl,
+     Supplier<? extends C> sup,
      int n,
      Gen<T> gen
    ){
      return stream(gen).map(s -> s.limit(n)
-                                  .collect(Collectors.toCollection((Supplier<? extends C>)COLLECTION_BUILDERS.get(cl))));
+                                  .collect(Collectors.toCollection(sup)));
    }
 
    public static <T,C extends Collection<T>> Gen<C> collection(
-     Class<C> cl,
+     Supplier<? extends C> sup,
      Gen<Integer> sizes,
      Gen<T> gen
    ){
-     return sizes.flatMap(s -> collectionOf(cl,s,gen));
+     return sizes.flatMap(s -> collectionOf(sup,s,gen));
    }
 
    public static <K,V> Gen<Map<K,V>> mapOf(
@@ -349,6 +324,18 @@ throw new RuntimeException("TODO");
      Month.JULY,    Month.AUGUST,   Month.SEPTEMBER,
      Month.OCTOBER, Month.NOVEMBER, Month.DECEMBER
    );
+
+
+   public static Gen<Instant> instantsBetween
+   (
+     Instant start,
+     Instant end
+   ){
+     return longsBetween(
+              start.toEpochMilli(),
+              end.toEpochMilli()
+            ).map(Instant::ofEpochMilli);
+   }
 
 
    public static Gen<LocalDate> localDatesBetween
@@ -468,6 +455,32 @@ throw new RuntimeException("TODO");
               c -> genD.flatMap(
               d -> genE.map(
               e -> f.apply(a,b,c,d,e))))) 
+            );
+   }
+
+   public static <A,B,C,D,E,F,T> Gen<T> lift
+   (
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC,
+     Gen<? extends D> genD,
+     Gen<? extends E> genE,
+     Gen<? extends F> genF,
+     Function6<? super A,
+               ? super B,
+               ? super C,
+               ? super D,
+               ? super E,
+               ? super F,
+               ? extends T> fn
+   ){
+     return genA.flatMap(
+              a -> genB.flatMap(
+              b -> genC.flatMap(
+              c -> genD.flatMap(
+              d -> genE.flatMap(
+              e -> genF.map(
+              f -> fn.apply(a,b,c,d,e,f)))))) 
             );
    }
 

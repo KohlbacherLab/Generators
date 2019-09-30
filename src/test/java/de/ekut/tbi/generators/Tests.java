@@ -6,6 +6,7 @@ import static org.junit.Assert.*;
 
 import java.util.Random;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -94,8 +95,9 @@ public final class Tests
   @Test
   public void testListGen(){
 
-//    Gen<List<Integer>> gen = Gen.listOf(15,Gen.between(10,42));
-    Gen<List<Integer>> gen = Gen.collectionOf(List.class,15,Gen.intsBetween(10,42));
+    Gen<List<Integer>> gen = Gen.collectionOf(ArrayList::new,
+                                              15,
+                                              Gen.intsBetween(10,42));
 
     List<Integer> ints = gen.next(RND);
 
