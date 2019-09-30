@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
+import static java.util.stream.Collectors.toList;
 
 import java.time.*;
 
@@ -89,6 +90,69 @@ public final class Tests
   public void testOneOfGen(){
 
     Gen<String> vowels = Gen.oneOf("A","E","I","O","U","Y");
+  }
+
+
+
+  @Test
+  public void testGenDistribution(){
+
+    var pA = 0.25;
+    var pE = 0.35;
+    var pI = 0.13;
+    var pO = 0.11;
+    var pU = 0.10;
+    var pY = 0.06;
+
+    var vowelGen = Gen.distribution(
+      Gen.weighted("A",pA),
+      Gen.weighted("E",pE),
+      Gen.weighted("I",pI),
+      Gen.weighted("O",pO),
+      Gen.weighted("U",pU),
+      Gen.weighted("Y",pY)
+    ); 
+
+    var n = 100000;
+
+    var numA = 0;
+    var numE = 0;
+    var numI = 0;
+    var numO = 0;
+    var numU = 0;
+    var numY = 0;
+
+    var vowels = Stream.generate(() -> vowelGen.next(RND))
+                       .limit(n)
+                       .collect(toList());
+
+    for (String vowel : vowels){
+
+      switch (vowel){
+        case "A": { numA++; break; }
+        case "E": { numE++; break; }
+        case "I": { numI++; break; }
+        case "O": { numO++; break; }
+        case "U": { numU++; break; }
+        case "Y": { numY++; break; }
+        default: { break; }
+      }
+    }
+
+    var freqA = (double)numA/n;
+    var freqE = (double)numE/n;
+    var freqI = (double)numI/n;
+    var freqO = (double)numO/n;
+    var freqU = (double)numU/n;
+    var freqY = (double)numY/n;
+
+    assertTrue(freqA > pA-0.05 && freqA < pA+0.05);
+    assertTrue(freqE > pE-0.05 && freqE < pE+0.05);
+    assertTrue(freqI > pI-0.05 && freqI < pI+0.05);
+    assertTrue(freqO > pO-0.05 && freqO < pO+0.05);
+    assertTrue(freqU > pU-0.05 && freqU < pU+0.05);
+    assertTrue(freqY > pY-0.05 && freqY < pY+0.05);
+
   }
 
 

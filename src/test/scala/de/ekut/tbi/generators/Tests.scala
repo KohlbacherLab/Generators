@@ -69,13 +69,6 @@ object Gens
 
   import Gen._
 
-/*
-  implicit val maleGen    = Gen.const(Gender.Male)
-  implicit val femaleGen  = Gen.const(Gender.Female)
-  implicit val otherGen   = Gen.const(Gender.Other)
-  implicit val unknownGen = Gen.const(Gender.Unknown)
-  implicit val genderGen: Gen[Gender] = Gen.of[Gender]
-*/
 
   implicit val genderGen: Gen[Gender] =
     Gen.oneOf(Gender.Male,Gender.Female,Gender.Other,Gender.Unknown)
@@ -154,6 +147,32 @@ class Tests extends FlatSpec
   }
 
 
+  "Generator of weighted distribution" should "work" in {
+
+    val weightedGenders = Gen.distribution(
+      (Gender.Male,5),
+      (Gender.Female,5),
+      (Gender.Other,2),
+      (Gender.Unknown,1)
+    )
+
+    val n = 100000
+
+    val genders = Stream.fill(n)(weightedGenders.next)
+
+    val (nm,nf,no,nu) = genders.foldLeft((0,0,0,0))((acc,g) => g match {
+      case Gender.Male    => (acc._1+1,acc._2,acc._3,acc._4)
+      case Gender.Female  => (acc._1,acc._2+1,acc._3,acc._4)
+      case Gender.Other   => (acc._1,acc._2,acc._3+1,acc._4)
+      case Gender.Unknown => (acc._1,acc._2,acc._3,acc._4+1)
+    })
+
+    println(nm.toDouble/n)
+    println(nf.toDouble/n)
+    println(no.toDouble/n)
+    println(nu.toDouble/n)
+
+  }
 
 
   "Gen[(Int,Double)]" should "work" in {

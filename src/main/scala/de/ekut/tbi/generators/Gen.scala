@@ -234,6 +234,53 @@ object Gen
   ): Gen[T] = oneOf(t0 +: t1 +: ts)
 
 
+
+
+  private case class Bin(
+    start: Double,
+    end: Double
+  ){
+    def contains(d: Double) = d >= start && d < end
+  }
+
+  def distribution[T](
+    wts: Seq[(T,Double)]
+  ): Gen[T] = {
+
+    val (ts,ws) = wts.unzip
+
+    val sumWs = ws.sum
+
+    val nws = ws.map(_/sumWs)
+
+    val bins = nws.foldLeft(
+                 (List.empty[Bin],0.0)
+               )(
+                 (bs_acc,nw) => {
+                   val bs = bs_acc._1
+                   val lowerBound = bs_acc._2
+                   val upperBound = lowerBound + nw
+                   (bs :+ Bin(lowerBound,upperBound), upperBound) 
+                 }
+               )._1
+
+    val binnedTs = bins.zip(ts)
+
+    Gen {
+      rnd =>
+      val d = rnd.nextDouble
+      binnedTs.find(bt => bt._1.contains(d)).get._2
+    }
+
+  }
+
+  def distribution[T](
+    wt1: (T,Double), 
+    wt2: (T,Double), 
+    wts: (T,Double)* 
+  ): Gen[T] = distribution(wt1 +: wt2 +: wts)
+
+
   def stream[T](
     gen: Gen[T]
   ): Gen[Stream[T]] = Gen {

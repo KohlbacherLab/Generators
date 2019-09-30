@@ -279,27 +279,96 @@ abstract class Gen<T>
                            .get());    
    }
 
-/*
-   static final class P<T>
-   {
-     public final int frequency;
-     public final T value;
 
-     P(int f, T t){
-       this.frequency = f;
-       this. value    = t;
+
+   static final class Weighted<T>
+   {
+     public final T value;
+     public final double weight;
+
+     Weighted(T t, double w){
+       this.value  = t;
+       this.weight = w;
      }
    }
 
-   public static <T> P<T> p(int f, T t){
-     return new P<>(f,t);
+
+   private static final class Bin
+   {
+     public final double start;
+     public final double end;
+
+     private Bin(double start, double end){
+       this.start = start;
+       this.end = end;
+     }
+
+     boolean contains(double d){
+       return d >= start && d < end;
+     }
+ 
+     private static Bin of(double start, double end){
+       return new Bin(start,end);
+     }
    }
 
-   public static <T> Gen<T> oneOfDistribution(P<T> p1, P<T> p2, P<T>... ps){
 
-throw new RuntimeException("TODO");
+   public static <T> Weighted<T> weighted(T t, double w){
+     return new Weighted<>(t,w);
    }
-*/
+
+
+   @SafeVarargs
+   public static <T> Gen<T> distribution(
+     Weighted<T> wt1,
+     Weighted<T> wt2,
+     Weighted<T>... wts
+   ){
+
+     return distribution(
+       Stream.concat(Stream.of(wt1,wt2),
+                     Stream.of(wts))
+             .collect(toList())
+     );
+   }
+
+   public static <T> Gen<T> distribution(
+     List<Weighted<T>> wts
+   ){
+
+     List<T>      ts = wts.stream().map(wt -> wt.value).collect(toList());
+     List<Double> ws = wts.stream().map(wt -> wt.weight).collect(toList());
+
+     double sumWs = ws.stream().reduce(0.0, (d1,d2) -> d1 + d2);
+
+     List<Double> nws = ws.stream().map(w -> w/sumWs).collect(toList());
+
+     List<Map.Entry<Bin,T>> binnedTs = new ArrayList<>();
+                               
+     double lowerBound = 0.0;
+
+     for (int i = 0; i < nws.size(); i++){
+
+        double upperBound = lowerBound + nws.get(i);
+        T t = ts.get(i);
+
+        binnedTs.add(entry(Bin.of(lowerBound,upperBound), t));
+        lowerBound = upperBound;
+     }
+
+     return Gen.apply(
+       rnd -> {
+         double d = rnd.nextDouble();
+         return binnedTs.stream()
+                        .filter(bt -> bt.getKey().contains(d))
+                        .findFirst()
+                        .get()
+                        .getValue();
+       }
+     );      
+
+   }
+
 
 
    //--------------------------------------------------------------------------

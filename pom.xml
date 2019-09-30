@@ -13,7 +13,7 @@
   <properties>
      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
      <!-- Java version-->
-     <java.version>9</java.version>
+     <java.version>11</java.version>
      <!-- JUnit 5 version-->
 <!--
      <junit.jupiter.version>5.0.0</junit.jupiter.version>
