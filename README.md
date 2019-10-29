@@ -160,7 +160,7 @@ public final class Patient
 // (syntax analogous to Scala "for comprehensions"):
 // ----------------------------------------------------------------------------
 
-Gen<Patient> genpat = Gen.lift(
+Gen<Patient> genpat = Gen.for_(
   Gen.uuidStrings(),                   // Gen of identifier Strings
   Gen.oneOf(Patient.Gender.MALE,       // Gen of values from closed value set: here Gender
             Patient.Gender.FEMALE,

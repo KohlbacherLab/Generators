@@ -207,10 +207,28 @@ abstract class Gen<T>
    }
 
 
-   public static <T> Gen<Optional<T>> optional(Gen<T> gen){
-     return apply(rnd -> Optional.of(rnd.nextBoolean())
-                                 .filter(b -> b == true)
-                                 .map(b -> gen.next(rnd)));
+   public static <T> Gen<Optional<T>> optional(
+     Gen<T> gen,
+     double p
+   ){
+     return apply(
+       rnd -> rnd.nextDouble() < p ? Optional.of(gen.next(rnd))
+                                   : Optional.empty()
+     );
+   }
+
+
+   public static <T> Gen<Optional<T>> optional(
+     Gen<T> gen
+   ){
+     return optional(gen, 0.5);
+/*
+     return apply(
+       rnd -> Optional.of(rnd.nextBoolean())
+                      .filter(b -> b == true)
+                      .map(b -> gen.next(rnd))
+     );
+*/
    }
 
 
@@ -249,7 +267,7 @@ abstract class Gen<T>
      Gen<V> values
    ){
      return stream(
-       Gen.lift(
+       Gen.for_(
          keys,
          values,
          Gen::entry
@@ -434,7 +452,7 @@ abstract class Gen<T>
      LocalDateTime start,
      LocalDateTime end
    ){
-     return lift(
+     return for_(
               Gen.localDatesBetween(start.toLocalDate(),
                                     end.toLocalDate()),
               Gen.localTimesBetween(start.toLocalTime(),
@@ -469,7 +487,7 @@ abstract class Gen<T>
    }
 
 
-   public static <A,B,T> Gen<T> lift
+   public static <A,B,T> Gen<T> for_
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
@@ -479,7 +497,7 @@ abstract class Gen<T>
    }
 
 
-   public static <A,B,C,T> Gen<T> lift
+   public static <A,B,C,T> Gen<T> for_
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
@@ -493,7 +511,7 @@ abstract class Gen<T>
             );
    }
 
-   public static <A,B,C,D,T> Gen<T> lift
+   public static <A,B,C,D,T> Gen<T> for_
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
@@ -509,7 +527,7 @@ abstract class Gen<T>
             );
    }
 
-   public static <A,B,C,D,E,T> Gen<T> lift
+   public static <A,B,C,D,E,T> Gen<T> for_
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
@@ -527,7 +545,7 @@ abstract class Gen<T>
             );
    }
 
-   public static <A,B,C,D,E,F,T> Gen<T> lift
+   public static <A,B,C,D,E,F,T> Gen<T> for_
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,

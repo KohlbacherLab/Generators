@@ -166,12 +166,12 @@ class Tests extends FlatSpec
       case Gender.Other   => (acc._1,acc._2,acc._3+1,acc._4)
       case Gender.Unknown => (acc._1,acc._2,acc._3,acc._4+1)
     })
-
+/*
     println(nm.toDouble/n)
     println(nf.toDouble/n)
     println(no.toDouble/n)
     println(nu.toDouble/n)
-
+*/
   }
 
 

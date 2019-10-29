@@ -163,7 +163,7 @@ public final class Tests
                                               15,
                                               Gen.intsBetween(10,42));
 
-    List<Integer> ints = gen.next(RND);
+    var ints = gen.next(RND);
 
     assertTrue(ints.size() == 15);
 
@@ -181,7 +181,7 @@ public final class Tests
                                               Gen.indices(),
                                               Gen.alphaNumeric(15));
 
-    Map<Integer,String> map = maps.next(RND);
+    var map = maps.next(RND);
 
     assertTrue(map.size() == n);
 
@@ -192,7 +192,7 @@ public final class Tests
   public void testFooGen(){
 
 
-    Gen<Foo> genfoo = Gen.lift(
+    Gen<Foo> genfoo = Gen.for_(
       Gen.ints(),
       Gen.doubles(),
       Gen.uuidStrings(),
@@ -213,7 +213,7 @@ public final class Tests
   @Test
   public void testPatientGen(){
 
-    Gen<Patient> patient = Gen.lift(
+    Gen<Patient> patient = Gen.for_(
       Gen.uuidStrings(),
       Gen.oneOf(Patient.Gender.MALE,  Patient.Gender.FEMALE,
                 Patient.Gender.OTHER, Patient.Gender.UNKNOWN),

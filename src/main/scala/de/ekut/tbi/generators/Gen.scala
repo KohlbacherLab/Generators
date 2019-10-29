@@ -14,8 +14,11 @@ import cats.data.{
 
 import shapeless.{
   HList, HNil, ::, Generic, Lazy,
-  Coproduct, CNil, :+:, Inl, Inr
+  Coproduct, CNil, :+:, Inl, Inr,
+  Nat
 }
+import shapeless.ops.coproduct
+import shapeless.ops.nat.ToInt
 
 
 
@@ -108,12 +111,17 @@ object Gen
   
 
   def option[T](
-    gen: Gen[T]
+    gen: Gen[T],
+    p: Double
   ): Gen[Option[T]] = Gen {
-    rnd => Option(rnd.nextBoolean)
-                 .filter(b => b)
-                 .map(_ => gen.next(rnd))
+    rnd => if (rnd.nextDouble < p) Some(gen.next(rnd))
+           else None
   }
+
+  def option[T](
+    gen: Gen[T]
+  ): Gen[Option[T]] = option(gen,0.5)
+
 
   def either[T,U](
     tGen: Gen[T],
@@ -138,16 +146,27 @@ object Gen
 
   implicit val cnilGen: Gen[CNil] = Gen { rnd => throw new RuntimeException("Never reached") }
 
-  implicit def coproductGen[H, T <: Coproduct](
+  /*
+     See "D. Gurnell -- The Type Astronaut's Guide to Shapeless", Sec. 8.3.3
+     https://underscore.io/books/shapeless-guide/
+  */
+  implicit def coproductGen[H, T <: Coproduct, L <: Nat](
     implicit
     head: Lazy[Gen[H]],
-    tail: Gen[T]
+    tail: Gen[T],
+    len: coproduct.Length.Aux[T, L],
+    lenAsInt: ToInt[L]
   ): Gen[H :+: T] = Gen {
-    rnd => if (rnd.nextBoolean) Inl(head.value.next(rnd))
-           else                 Inr(tail.next(rnd))
+
+    rnd =>
+      val p = 1.0/(1 + lenAsInt())
+
+      if (rnd.nextDouble < p) Inl(head.value.next(rnd))
+      else                    Inr(tail.next(rnd))
   }
 
-  implicit def coproductGenTerminal[H](
+
+  implicit def terminalCoproductGen[H](
     implicit
     head: Lazy[Gen[H]]
   ): Gen[H :+: CNil] = Gen {
@@ -226,7 +245,7 @@ object Gen
   def oneOf[T](
     ts: Seq[T]
   ): Gen[T] = Gen {
-    rnd => ts.iterator.drop(rnd.nextInt(ts.size)).next
+    rnd => ts(rnd.nextInt(ts.size))
   }
 
   def oneOf[T](
@@ -268,8 +287,8 @@ object Gen
 
     Gen {
       rnd =>
-      val d = rnd.nextDouble
-      binnedTs.find(bt => bt._1.contains(d)).get._2
+        val d = rnd.nextDouble
+        binnedTs.find(bt => bt._1.contains(d)).get._2
     }
 
   }
