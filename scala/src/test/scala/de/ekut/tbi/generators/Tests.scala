@@ -116,6 +116,21 @@ class Tests extends FlatSpec
   }
 
 
+  "Int generation within interval" should "work" in {
+
+    val start = 1000
+    val end = 10000
+
+    val intsInInterval = Gen.intsBetween(start,end)
+
+    assert(
+      Stream.continually(intsInInterval.next)
+            .take(1000)
+            .forall(l => l >= start && l < end)
+    )
+
+  }
+
   "Long generation within interval" should "work" in {
 
     val start: Long = 1000L
@@ -124,7 +139,8 @@ class Tests extends FlatSpec
     val longsInInterval = Gen.longsBetween(start,end)
 
     assert(
-      Stream.fill(500)(longsInInterval.next)
+      Stream.continually(longsInInterval.next)
+            .take(1000)
             .forall(l => l >= start && l < end)
     )
 
@@ -188,9 +204,9 @@ class Tests extends FlatSpec
 
   "Gen[Patient]" should "work" in {
 
-    val pats = List.fill(10)(Gen.of[Patient].next)
+    val pats = List.fill(30)(Gen.of[Patient].next)
 
-    pats foreach println
+//    pats foreach println
 
   }
 

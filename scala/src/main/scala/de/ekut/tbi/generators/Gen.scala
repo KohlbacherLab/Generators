@@ -372,7 +372,6 @@ object Gen
   } 
 
 
-//  def positiveInts: Gen[Int] = ints.filter(_ > 0)
   def positiveInts: Gen[Int] = Gen { rnd =>
     val i = rnd.nextInt
     if (i > 0) i
