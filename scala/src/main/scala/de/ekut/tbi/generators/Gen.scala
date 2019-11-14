@@ -200,7 +200,8 @@ object Gen
 
 
   def intsBetween(start: Int, endExcl: Int): Gen[Int] = Gen { 
-    rnd => rnd.nextInt(endExcl-start) + start
+    rnd => if (endExcl-start > 0) rnd.nextInt(endExcl-start) + start else 0
+//    rnd => rnd.nextInt(endExcl-start) + start
   }
 
 
@@ -253,6 +254,25 @@ object Gen
   ): Gen[T] = oneOf(t0 +: t1 +: ts)
 
 
+  def oneOfEach[T,S[X] <: Traversable[X]](
+    gens: S[Gen[T]]
+  )(
+    implicit
+    bf: CanBuildFrom[S[T], T, S[T]]
+  ): Gen[S[T]] = Gen {
+    rnd => gens.map(_.next(rnd)).to[S]
+  }
+
+
+  def subsets[T, S[X] <: Traversable[X]](
+    ts: S[T]
+  )(
+    implicit
+    bf: CanBuildFrom[S[T], T, S[T]]
+  ): Gen[S[T]] = Gen {
+    rnd => rnd.shuffle(ts).drop(rnd.nextInt(ts.size-1)).to[S]
+  }
+
 
 
   private case class Bin(
@@ -263,10 +283,10 @@ object Gen
   }
 
   def distribution[T](
-    wts: Seq[(T,Double)]
+    wts: Seq[(Double,T)]
   ): Gen[T] = {
 
-    val (ts,ws) = wts.unzip
+    val (ws,ts) = wts.unzip
 
     val sumWs = ws.sum
 
@@ -294,9 +314,9 @@ object Gen
   }
 
   def distribution[T](
-    wt1: (T,Double), 
-    wt2: (T,Double), 
-    wts: (T,Double)* 
+    wt1: (Double,T), 
+    wt2: (Double,T), 
+    wts: (Double,T)* 
   ): Gen[T] = distribution(wt1 +: wt2 +: wts)
 
 
@@ -372,11 +392,13 @@ object Gen
   } 
 
 
-  def positiveInts: Gen[Int] = Gen { rnd =>
-    val i = rnd.nextInt
-    if (i > 0) i
-    else -i
-  }
+  def positiveInts: Gen[Int] =
+    Gen {
+      rnd =>
+        val i = rnd.nextInt
+        if (i > 0) i else -i
+    }
+
 
 
 }

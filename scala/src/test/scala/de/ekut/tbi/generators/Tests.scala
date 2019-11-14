@@ -166,10 +166,10 @@ class Tests extends FlatSpec
   "Generator of weighted distribution" should "work" in {
 
     val weightedGenders = Gen.distribution(
-      (Gender.Male,5),
-      (Gender.Female,5),
-      (Gender.Other,2),
-      (Gender.Unknown,1)
+      (5,Gender.Male),
+      (5,Gender.Female),
+      (2,Gender.Other),
+      (1,Gender.Unknown)
     )
 
     val n = 100000
