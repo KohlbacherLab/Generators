@@ -282,7 +282,8 @@ abstract class Gen<T>
 
 
    @SafeVarargs
-   public static <T> Gen<T> oneOf(T t1, T t2, T... ts){
+   public static <T> Gen<T> oneOf(T t1, T t2, T... ts)
+   {
 
      List<T> vals = Stream.concat(Stream.of(t1,t2),
                                   Stream.of(ts))
@@ -297,6 +298,15 @@ abstract class Gen<T>
                            .get());    
    }
 
+
+   public static <T, Gs extends Collection<Gen<T>>, Cs extends Collection<T>> Gen<Cs> oneOfEach(
+     Supplier<? extends Cs> sup,
+     Gs gens
+   ){
+     return apply(
+       rnd -> gens.stream().map(g -> g.next(rnd)).collect(Collectors.toCollection(sup))
+     );
+   }
 
 
    static final class Weighted<T>
