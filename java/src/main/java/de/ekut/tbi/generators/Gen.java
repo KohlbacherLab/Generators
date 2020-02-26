@@ -48,16 +48,25 @@ abstract class Gen<T>
    //--------------------------------------------------------------------------
    public abstract T next(Random rnd);
 
+   public Gen<T> filter(Predicate<? super T> p)
+   {
+     return apply(
+       rnd -> unfold(Stream.generate(() -> this.next(rnd))
+                           .dropWhile(p)).next(rnd)
+     );
+   }
+
+/*
    //TODO: re-consider this utility method, because at present not stack-safe 
-   public Gen<T> filter(Predicate<T> p)
+   public Gen<T> filter(Predicate<? super T> p)
    {
      return apply(rnd -> doFilter(this,p,rnd));
    }
-
    private static <T> T doFilter(Gen<T> gen, Predicate<T> p, Random rnd){
      T t = gen.next(rnd);
      return p.test(t) ? t : doFilter(gen,p,rnd);
    }
+*/
 
    public <U> Gen<U> map(Function<? super T, ? extends U> f)
    {
@@ -222,13 +231,6 @@ abstract class Gen<T>
      Gen<T> gen
    ){
      return optional(gen, 0.5);
-/*
-     return apply(
-       rnd -> Optional.of(rnd.nextBoolean())
-                      .filter(b -> b == true)
-                      .map(b -> gen.next(rnd))
-     );
-*/
    }
 
 

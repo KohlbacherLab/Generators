@@ -27,25 +27,46 @@ sealed trait Gen[T]
 
   def next(implicit rnd: Random): T
 
-/*
+
   def filter(p: T => Boolean): Gen[T] = {
     Gen { rnd => Gen.doFilter(this,p)(rnd) }
   }
-*/
+
 
   def map[U](
     f: T => U
-  ): Gen[U] = Gen(rnd => f(this.next(rnd)))
+  ): Gen[U] = 
+    Gen { rnd => f(this.next(rnd)) }
+
 
   def flatMap[U](
     f: T => Gen[U]
-  ): Gen[U] = Gen(rnd => f(this.next(rnd)).next(rnd)) 
+  ): Gen[U] =
+    Gen { rnd => f(this.next(rnd)).next(rnd) }
+
+
+  def conditionOf[U](
+    f: T => Gen[U]
+  ): Gen[(T,U)] =
+    for {
+      t <- this
+      u <- f(t)
+    } yield (t,u)
+
+
+  def zip[U](gu: Gen[U]): Gen[(T,U)] =
+    for {
+      t <- this
+      u <- gu
+    } yield (t,u)
+
 
 }
 
 
 object Gen
 {
+
 
   @annotation.tailrec
   protected def doFilter[T](
@@ -72,7 +93,7 @@ object Gen
 
   val floats: Gen[Float] = Gen { rnd => rnd.nextFloat }
   
-  val booleans: Gen[Boolean] = Gen { rnd => Random.nextBoolean }
+  val booleans: Gen[Boolean] = Gen { rnd => rnd.nextBoolean }
 
   val chars: Gen[Char] = Gen { rnd => rnd.nextPrintableChar }
   
@@ -201,7 +222,6 @@ object Gen
 
   def intsBetween(start: Int, endExcl: Int): Gen[Int] = Gen { 
     rnd => if (endExcl-start > 0) rnd.nextInt(endExcl-start) + start else 0
-//    rnd => rnd.nextInt(endExcl-start) + start
   }
 
 
@@ -313,6 +333,7 @@ object Gen
 
   }
 
+
   def distribution[T](
     wt1: (Double,T), 
     wt2: (Double,T), 
@@ -320,18 +341,60 @@ object Gen
   ): Gen[T] = distribution(wt1 +: wt2 +: wts)
 
 
+  def distributionOf[T](
+    wts: Seq[(Double,Gen[T])]
+  ): Gen[T] = {
+
+    val (ws,ts) = wts.unzip
+
+    val sumWs = ws.sum
+
+    val nws = ws.map(_/sumWs)
+
+    val bins =
+      nws.foldLeft(
+        (List.empty[Bin],0.0)
+      )(
+        (bs_acc,nw) => {
+          val bs = bs_acc._1
+          val lowerBound = bs_acc._2
+          val upperBound = lowerBound + nw
+          (bs :+ Bin(lowerBound,upperBound), upperBound) 
+        }
+      )._1
+
+    val binnedTs = bins.zip(ts)
+
+    Gen {
+      rnd =>
+        val d = rnd.nextDouble
+        binnedTs.find(bt => bt._1.contains(d)).get._2.next(rnd)
+    }
+
+  }
+
+
+  def distributionOf[T](
+    wt1: (Double,Gen[T]), 
+    wt2: (Double,Gen[T]), 
+    wts: (Double,Gen[T])* 
+  ): Gen[T] = distributionOf(wt1 +: wt2 +: wts)
+
+
   def stream[T](
     gen: Gen[T]
-  ): Gen[Stream[T]] = Gen {
-    rnd => Stream.continually(gen.next(rnd))
-  }
+  ): Gen[Stream[T]] =
+    Gen {
+      rnd => Stream.continually(gen.next(rnd))
+    }
     
   def listOf[T](
     size: Int,
     gen: Gen[T]
-  ): Gen[List[T]] = Gen {
-    rnd => List.fill(size)(gen.next(rnd))
-  }
+  ): Gen[List[T]] =
+    Gen {
+      rnd => List.fill(size)(gen.next(rnd))
+    }
 
   def list[T](
     sizes: Gen[Int],
@@ -344,9 +407,10 @@ object Gen
     size: Int,
     keys: Gen[K],
     values: Gen[V]
-  ): Gen[Map[K,V]] = Gen {
-    rnd => Stream.fill(size)((keys.next(rnd),values.next(rnd))).toMap
-  }
+  ): Gen[Map[K,V]] =
+    Gen {
+      rnd => Stream.fill(size)((keys.next(rnd),values.next(rnd))).toMap
+    }
 
   def map[K,V](
     sizes: Gen[Int],
