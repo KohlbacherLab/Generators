@@ -147,6 +147,20 @@ class Tests extends FlatSpec
   }
 
 
+  "Subset generation" should "work" in {
+
+     val nums = Set(0,1,2,3,4,5,6,7,8,9)
+
+     val genNums = Gen.subsets(nums)
+
+     assert(
+       Stream.fill(500)(genNums.next)
+         .forall( _.forall(nums.contains(_)))
+     )
+
+  }
+
+
   "LocalDate generation within interval" should "work" in {
 
     val start = LocalDate.of(1980,1,1)
@@ -205,8 +219,6 @@ class Tests extends FlatSpec
   "Gen[Patient]" should "work" in {
 
     val pats = List.fill(30)(Gen.of[Patient].next)
-
-//    pats foreach println
 
   }
 

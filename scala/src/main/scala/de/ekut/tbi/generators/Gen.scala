@@ -42,7 +42,9 @@ sealed trait Gen[T]
   def flatMap[U](
     f: T => Gen[U]
   ): Gen[U] =
-    Gen { rnd => f(this.next(rnd)).next(rnd) }
+    Gen {
+      rnd => f(this.next(rnd)).next(rnd)
+    }
 
 
   def conditionOf[U](
@@ -211,32 +213,56 @@ object Gen
   def of[T](implicit gen: Gen[T]): Gen[T] = gen
 
 
-  def apply[T](f: () => T): Gen[T] = new Gen[T]{
-    def next(implicit rnd: Random): T = f()
-  }
+  def apply[T](
+    f: () => T
+  ): Gen[T] =
+    new Gen[T]{
+      def next(implicit rnd: Random): T = f()
+    }
 
-  def apply[T](f: Random => T): Gen[T] = new Gen[T]{
-    def next(implicit rnd: Random): T = f(rnd)
-  }
-
-
-  def intsBetween(start: Int, endExcl: Int): Gen[Int] = Gen { 
-    rnd => if (endExcl-start > 0) rnd.nextInt(endExcl-start) + start else 0
-  }
-
-
-  def longsBetween(start: Long, endExcl: Long): Gen[Long] =
-    doublesBetween(start.toDouble,endExcl.toDouble)
-                 .map(_.toLong)
+  def apply[T](
+    f: Random => T
+  ): Gen[T] =
+    new Gen[T]{
+      def next(implicit rnd: Random): T = f(rnd)
+    }
 
 
-  def floatsBetween(start: Float, end: Float): Gen[Float] = Gen(
+  def intsBetween(
+    start: Int,
+    endExcl: Int
+  ): Gen[Int] =
+    Gen { 
+      rnd => if (endExcl-start > 0) rnd.nextInt(endExcl-start) + start else 0
+    }
+
+
+  def longsBetween(
+    start: Long,
+    endExcl: Long
+  ): Gen[Long] =
+    doublesBetween(
+      start.toDouble,
+      endExcl.toDouble
+    )
+    .map(_.toLong)
+
+
+  def floatsBetween(
+    start: Float,
+    end: Float
+  ): Gen[Float] =
+    Gen {
     rnd => rnd.nextFloat*(end-start) + start
-  )
+   }
 
-  def doublesBetween(start: Double, end: Double): Gen[Double] = Gen(
-    rnd => rnd.nextDouble*(end-start) + start
-  )
+  def doublesBetween(
+    start: Double,
+    end: Double
+  ): Gen[Double] =
+    Gen {
+      rnd => rnd.nextDouble*(end-start) + start
+    }
 
 
   def iterate[T](
@@ -289,10 +315,12 @@ object Gen
   )(
     implicit
     bf: CanBuildFrom[S[T], T, S[T]]
-  ): Gen[S[T]] = Gen {
-    rnd => rnd.shuffle(ts).drop(rnd.nextInt(ts.size-1)).to[S]
+  ): Gen[S[T]] = {
+    Gen {
+      rnd => rnd.shuffle(ts)
+                .drop(rnd.nextInt(ts.size)).to[S]
+    } 
   }
-
 
 
   private case class Bin(
