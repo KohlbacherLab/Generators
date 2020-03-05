@@ -41,18 +41,15 @@ public final class Tests
   @Test
   public void testIntGen(){
 
-    Gen<Integer> gen = Gen.intsBetween(10,42);
+    var start = 10;
+    var end   = 42;
 
-/*
-    Prop<Integer> within10to42 = Prop.forAll(i -> i >= 0 && i < 42);
-    
-    assertTrue(within10to42.check(gen));
-*/
+    Gen<Integer> gen = Gen.intsBetween(start,end);
 
     assertTrue(
       Stream.generate(() -> gen.next(RND))
             .limit(25)
-            .allMatch(i -> i >= 0 && i < 42)
+            .allMatch(i -> i >= start && i < end)
     );
   }
 
@@ -80,9 +77,11 @@ public final class Tests
     Gen<Integer> evens = Gen.indices()
                             .filter(i -> i%2 == 0);
 
-    assertTrue(Stream.generate(() -> evens.next(RND))
-                     .limit(30)
-                     .allMatch(i -> i%2 == 0));
+    assertTrue(
+      Stream.generate(() -> evens.next(RND))
+            .limit(30)
+            .allMatch(i -> i%2 == 0)
+    );
   }
 
 

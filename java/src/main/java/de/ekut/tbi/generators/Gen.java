@@ -52,7 +52,7 @@ abstract class Gen<T>
    {
      return apply(
        rnd -> unfold(Stream.generate(() -> this.next(rnd))
-                           .dropWhile(p)).next(rnd)
+                           .dropWhile(p.negate())).next(rnd)
      );
    }
 
