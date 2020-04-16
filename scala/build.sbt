@@ -2,26 +2,41 @@
 
 name := "generators"
 organization in ThisBuild := "de.ekut.tbi"
-scalaVersion in ThisBuild := "2.12.8"
-//scalaVersion in ThisBuild := "2.13.0"
 version := "0.1-SNAPSHOT"
 
+lazy val scala212 = "2.12.10"
+lazy val scala213 = "2.13.1"
+lazy val supportedScalaVersions =
+  List(
+    scala212,
+    scala213
+  )
+
+//scalaVersion in ThisBuild := scala212
+scalaVersion in ThisBuild := scala213
+
+unmanagedSourceDirectories in Compile += {
+  val sourceDir = (sourceDirectory in Compile).value
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+    case _                       => sourceDir / "scala-2.13-"
+  }
+}
 
 
 //-----------------------------------------------------------------------------
-// PROJECTS
+// PROJECT
 //-----------------------------------------------------------------------------
-
 
 lazy val root = project.in(file("."))
   .settings(settings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.chuusai" %% "shapeless" % "2.3.3",
-      "org.typelevel" %% "cats-core" % "2.0.0-M4",
+      "com.chuusai"   %% "shapeless" % "2.3.3",
+      "org.typelevel" %% "cats-core" % "2.1.1",
       "org.scalatest" %% "scalatest" % "3.0.8" % "test"
-//      "org.scalatest" % "scalatest_2.13" % "3.0.8" % "test"
    ),
+   crossScalaVersions := supportedScalaVersions
  )
 
 
@@ -31,19 +46,16 @@ lazy val root = project.in(file("."))
 
 lazy val settings = commonSettings
 
-unmanagedSourceDirectories in Compile := (scalaSource in Compile).value :: Nil
-unmanagedSourceDirectories in Test := (scalaSource in Test).value :: Nil
-
 lazy val compilerOptions = Seq(
+  "-encoding", "utf8",
   "-unchecked",
-//  "-feature",
+  "-Xfatal-warnings",
+  "-feature",
 //  "-language:existentials",
-//  "-language:higherKinds",
+  "-language:higherKinds",
 //  "-language:implicitConversions",
 //  "-language:postfixOps",
-  "-deprecation",
-  "-encoding",
-  "utf8"
+  "-deprecation"
 )
 
 lazy val commonSettings = Seq(

@@ -6,7 +6,6 @@ import java.util.UUID
 import scala.util.{
   Either, Random
 }
-import scala.collection.generic.CanBuildFrom
 
 import cats.data.{
   NonEmptyList
@@ -19,7 +18,6 @@ import shapeless.{
 }
 import shapeless.ops.coproduct
 import shapeless.ops.nat.ToInt
-
 
 
 sealed trait Gen[T]
@@ -66,7 +64,7 @@ sealed trait Gen[T]
 }
 
 
-object Gen
+object Gen extends VersionSpecifics
 {
 
 
@@ -275,17 +273,6 @@ object Gen
   ): Gen[T] = Gen { () => it.next }
 
 
-  def iterate[T](
-    init: T
-  )(
-    f: T => T
-  ): Gen[T] = iterate(Stream.iterate(init)(f))
-
-
-  def indicesFrom(
-    i: Int
-  ): Gen[Int] = iterate(Stream.from(i)) 
-
   def indices: Gen[Int] = indicesFrom(0)
 
 
@@ -298,29 +285,6 @@ object Gen
   def oneOf[T](
     t0: T, t1: T, ts: T*
   ): Gen[T] = oneOf(t0 +: t1 +: ts)
-
-
-  def oneOfEach[T,S[X] <: Traversable[X]](
-    gens: S[Gen[T]]
-  )(
-    implicit
-    bf: CanBuildFrom[S[T], T, S[T]]
-  ): Gen[S[T]] = Gen {
-    rnd => gens.map(_.next(rnd)).to[S]
-  }
-
-
-  def subsets[T, S[X] <: Traversable[X]](
-    ts: S[T]
-  )(
-    implicit
-    bf: CanBuildFrom[S[T], T, S[T]]
-  ): Gen[S[T]] = {
-    Gen {
-      rnd => rnd.shuffle(ts)
-                .drop(rnd.nextInt(ts.size)).to[S]
-    } 
-  }
 
 
   private case class Bin(
@@ -408,13 +372,6 @@ object Gen
     wts: (Double,Gen[T])* 
   ): Gen[T] = distributionOf(wt1 +: wt2 +: wts)
 
-
-  def stream[T](
-    gen: Gen[T]
-  ): Gen[Stream[T]] =
-    Gen {
-      rnd => Stream.continually(gen.next(rnd))
-    }
     
   def listOf[T](
     size: Int,
@@ -437,7 +394,7 @@ object Gen
     values: Gen[V]
   ): Gen[Map[K,V]] =
     Gen {
-      rnd => Stream.fill(size)((keys.next(rnd),values.next(rnd))).toMap
+      rnd => List.fill(size)((keys.next(rnd),values.next(rnd))).toMap
     }
 
   def map[K,V](
@@ -446,26 +403,6 @@ object Gen
     values: Gen[V]
   ): Gen[Map[K,V]] = {
     sizes.flatMap(mapOf(_,keys,values))
-  }
-
-  def collectionOf[C[_],T](
-    size: Int,
-    gen: Gen[T]
-  )(
-    implicit
-    cbf: CanBuildFrom[Nothing, T, C[T]]
-  ): Gen[C[T]] = {
-    listOf(size,gen).map(_.to[C])
-  }
-
-  def collection[C[_],T](
-    sizes: Gen[Int],
-    gen: Gen[T]
-  )(
-    implicit
-    cbf: CanBuildFrom[Nothing, T, C[T]]
-  ): Gen[C[T]] = {
-    sizes.flatMap(collectionOf(_,gen))
   }
 
 

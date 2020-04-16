@@ -48,8 +48,10 @@ public final class Tests
 
     assertTrue(
       Stream.generate(() -> gen.next(RND))
-            .limit(25)
-            .allMatch(i -> i >= start && i < end)
+        .limit(250)
+        .allMatch(
+          i -> i >= start && i < end
+        )
     );
   }
 
@@ -63,9 +65,11 @@ public final class Tests
 
     assertTrue(
       Stream.generate(() -> alphaNums.next(RND))
-            .limit(50)
-            .allMatch(s -> s.length() == n 
-                      && s.matches("^[a-zA-Z0-9]+$"))
+        .limit(50)
+        .allMatch(
+          s -> s.length() == n &&
+               s.matches("^[a-zA-Z0-9]+$")
+        )
     );
 
   }
@@ -79,18 +83,10 @@ public final class Tests
 
     assertTrue(
       Stream.generate(() -> evens.next(RND))
-            .limit(30)
-            .allMatch(i -> i%2 == 0)
+        .limit(30)
+        .allMatch(i -> i%2 == 0)
     );
   }
-
-
-  @Test
-  public void testOneOfGen(){
-
-    Gen<String> vowels = Gen.oneOf("A","E","I","O","U","Y");
-  }
-
 
 
   @Test
@@ -158,16 +154,21 @@ public final class Tests
   @Test
   public void testListGen(){
 
-    Gen<List<Integer>> gen = Gen.collectionOf(ArrayList::new,
-                                              15,
-                                              Gen.intsBetween(10,42));
+    Gen<List<Integer>> gen =
+      Gen.collectionOf(
+        ArrayList::new,
+        15,
+        Gen.intsBetween(10,42)
+      );
 
     var ints = gen.next(RND);
 
     assertTrue(ints.size() == 15);
 
-    assertTrue(ints.stream()
-                   .allMatch(i -> i >= 0 && i < 42) );
+    assertTrue(
+      ints.stream()
+          .allMatch(i -> i >= 0 && i < 42)
+    );
   }
 
 
@@ -198,7 +199,6 @@ public final class Tests
       Foo::new
     );
  
-//    Gen<Foo> genfoo = Gen.of(Foo.class);
 
     Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
 
@@ -214,26 +214,18 @@ public final class Tests
 
     Gen<Patient> patient = Gen.for_(
       Gen.uuidStrings(),
-      Gen.oneOf(Patient.Gender.MALE,  Patient.Gender.FEMALE,
-                Patient.Gender.OTHER, Patient.Gender.UNKNOWN),
+      Gen.oneOf(
+        Patient.Gender.MALE,
+        Patient.Gender.FEMALE,
+        Patient.Gender.OTHER,
+        Patient.Gender.UNKNOWN
+      ),
       Gen.localDatesBetween(
-            LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
-          ),
+        LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
+      ),
       Gen.optional(Gen.localDateNow()),
       Patient::of
     );
-
-/*    
-    Gen.register(
-      Gen.oneOf(Patient.Gender.MALE,
-                Patient.Gender.FEMALE,
-                Patient.Gender.OTHER,
-                Patient.Gender.UNKNOWN),
-      Patient.Gender.class
-    );
-
-    Gen<Patient> patient = Gen.of(Patient.class);
-*/
  
     Gen<List<Patient>> genpatients = Gen.listOf(15,patient);
 

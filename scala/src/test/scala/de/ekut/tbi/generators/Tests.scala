@@ -124,9 +124,8 @@ class Tests extends FlatSpec
     val intsInInterval = Gen.intsBetween(start,end)
 
     assert(
-      Stream.continually(intsInInterval.next)
-            .take(1000)
-            .forall(l => l >= start && l < end)
+      List.fill(1000)(intsInInterval.next)
+        .forall(l => l >= start && l < end)
     )
 
   }
@@ -139,9 +138,8 @@ class Tests extends FlatSpec
     val longsInInterval = Gen.longsBetween(start,end)
 
     assert(
-      Stream.continually(longsInInterval.next)
-            .take(1000)
-            .forall(l => l >= start && l < end)
+      List.fill(1000)(longsInInterval.next)
+        .forall(l => l >= start && l < end)
     )
 
   }
@@ -154,7 +152,7 @@ class Tests extends FlatSpec
      val genNums = Gen.subsets(nums)
 
      assert(
-       Stream.fill(500)(genNums.next)
+       List.fill(500)(genNums.next)
          .forall( _.forall(nums.contains(_)))
      )
 
@@ -169,7 +167,7 @@ class Tests extends FlatSpec
     val datesInInterval = DateTimeGens.localDatesBetween(start,end)
 
     assert(
-      Stream.fill(500)(datesInInterval.next)
+      List.fill(500)(datesInInterval.next)
             .forall(d => (d.isAfter(start) || d.isEqual(start))
                          && (d.isBefore(end) || d.isEqual(end)))
     )
@@ -188,7 +186,7 @@ class Tests extends FlatSpec
 
     val n = 100000
 
-    val genders = Stream.fill(n)(weightedGenders.next)
+    val genders = List.fill(n)(weightedGenders.next)
 
     val (nm,nf,no,nu) = genders.foldLeft((0,0,0,0))((acc,g) => g match {
       case Gender.Male    => (acc._1+1,acc._2,acc._3,acc._4)
@@ -196,12 +194,7 @@ class Tests extends FlatSpec
       case Gender.Other   => (acc._1,acc._2,acc._3+1,acc._4)
       case Gender.Unknown => (acc._1,acc._2,acc._3,acc._4+1)
     })
-/*
-    println(nm.toDouble/n)
-    println(nf.toDouble/n)
-    println(no.toDouble/n)
-    println(nu.toDouble/n)
-*/
+
   }
 
 
@@ -214,6 +207,7 @@ class Tests extends FlatSpec
 
      val pairs = Gen.collection[Set,(Int,Double)](Gen.intsBetween(5,10),pairGen).next
   }
+
 
 
   "Gen[Patient]" should "work" in {
