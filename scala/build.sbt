@@ -12,7 +12,6 @@ lazy val supportedScalaVersions =
     scala213
   )
 
-//scalaVersion in ThisBuild := scala212
 scalaVersion in ThisBuild := scala213
 
 unmanagedSourceDirectories in Compile += {

@@ -127,8 +127,7 @@ object Gen extends VersionSpecifics
   
   def alphaNumeric(n: Int): Gen[String] =
     stream(oneOf(alphabet ++ digits))
-          .map(s => s.take(n)
-                     .foldLeft(new String)(_ + _))
+      .map(s => s.take(n).foldLeft(new String)(_ + _))
   
 
   def option[T](
@@ -138,6 +137,11 @@ object Gen extends VersionSpecifics
     rnd => if (rnd.nextDouble < p) Some(gen.next(rnd))
            else None
   }
+
+
+  def enum[E <: Enumeration](e: E): Gen[E#Value] =
+    Gen.oneOf(e.values.toSeq)
+
 
   def option[T](
     gen: Gen[T]
