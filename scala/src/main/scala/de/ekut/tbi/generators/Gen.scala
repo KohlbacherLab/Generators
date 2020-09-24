@@ -425,12 +425,14 @@ object Gen extends VersionSpecifics
   } 
 
 
+  import scala.math
+
   def positiveInts: Gen[Int] =
-    Gen {
-      rnd =>
-        val i = rnd.nextInt
-        if (i > 0) i else -i
-    }
+    Gen { rnd => math.abs(rnd.nextInt) }
+
+  def positiveLongs: Gen[Long] =
+    Gen { rnd => math.abs(rnd.nextLong) }
+
 
 
 
