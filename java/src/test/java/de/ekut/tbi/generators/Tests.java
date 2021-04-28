@@ -191,7 +191,6 @@ public final class Tests
   @Test
   public void testFooGen(){
 
-
     Gen<Foo> genfoo = Gen.for_(
       Gen.ints(),
       Gen.doubles(),
@@ -199,7 +198,20 @@ public final class Tests
     )
     .yield(Foo::new);
  
+    Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
 
+    List<Foo> foos = genfoos.next(RND);
+
+    assertTrue(foos.size() == 15);
+
+  }
+
+
+  @Test
+  public void testFooGenDerivation(){
+
+    Gen<Foo> genfoo = Gen.of(Foo.class);
+ 
     Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
 
     List<Foo> foos = genfoos.next(RND);

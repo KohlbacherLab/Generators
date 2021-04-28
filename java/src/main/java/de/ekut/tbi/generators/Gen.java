@@ -312,12 +312,12 @@ public abstract class Gen<T>
    }
 
 
-   private static final class Weighted<T>
+   public static final class Weighted<T>
    {
      public final T value;
      public final double weight;
 
-     Weighted(T t, double w){
+     private Weighted(T t, double w){
        this.value  = t;
        this.weight = w;
      }
@@ -671,12 +671,12 @@ public abstract class Gen<T>
      DERIVED_GENS.put(c,gen);
    } 
 
-   public static <T> Gen<? extends T> of(Class<? extends T> cl){
-     return (Gen<? extends T>)DERIVED_GENS.computeIfAbsent(cl, Gen::deriveFor);
+   public static <T> Gen<T> of(Class<? extends T> cl){
+     return (Gen<T>)DERIVED_GENS.computeIfAbsent(cl, Gen::deriveFor);
    }
 
-   private static <T> Gen<? extends T> of(Type t){
-     return (Gen<? extends T>)DERIVED_GENS.computeIfAbsent(t, Gen::deriveFor);
+   private static <T> Gen<T> of(Type t){
+     return (Gen<T>)DERIVED_GENS.computeIfAbsent(t, Gen::deriveFor);
    }
 
    private static Gen<?> deriveFor(Type t){
@@ -684,7 +684,7 @@ public abstract class Gen<T>
    }
 
 
-   private static <T> Gen<? extends T> deriveFor(Class<? extends T> cl){
+   private static <T> Gen<T> deriveFor(Class<? extends T> cl){
 
      Constructor<?> cons =
        Stream.of(cl.getDeclaredConstructors())
@@ -699,7 +699,7 @@ public abstract class Gen<T>
              .map(Gen::of)
              .collect(toList());
            
-     return (Gen<? extends T>)apply(
+     return (Gen<T>)apply(
        rnd -> {
          try {
            return cons.newInstance(gens.stream().map(g -> g.next(rnd)).toArray());
