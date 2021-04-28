@@ -37,7 +37,7 @@ import java.lang.reflect.Modifier;
 
 
 
-abstract class Gen<T>
+public abstract class Gen<T>
 {
 
    private Gen(){ }
@@ -271,9 +271,9 @@ abstract class Gen<T>
      return stream(
        Gen.for_(
          keys,
-         values,
-         Gen::entry
+         values
        )
+       .yield(Gen::entry)
      ).map(s -> s.limit(n).collect(toMap(Map.Entry::getKey,Map.Entry::getValue)));
    }
 
@@ -294,10 +294,11 @@ abstract class Gen<T>
    }
 
    public static <T> Gen<T> oneOf(Collection<T> ts){
-     return apply(rnd -> ts.stream()
-                           .skip(rnd.nextInt(ts.size()))
-                           .findFirst()
-                           .get());    
+     return apply(
+       rnd -> ts.stream()
+                .skip(rnd.nextInt(ts.size()))
+                .findFirst()
+                .get());    
    }
 
 
@@ -311,7 +312,7 @@ abstract class Gen<T>
    }
 
 
-   static final class Weighted<T>
+   private static final class Weighted<T>
    {
      public final T value;
      public final double weight;
@@ -356,8 +357,7 @@ abstract class Gen<T>
    ){
 
      return distribution(
-       Stream.concat(Stream.of(wt1,wt2),
-                     Stream.of(wts))
+       Stream.concat(Stream.of(wt1,wt2), Stream.of(wts))
              .collect(toList())
      );
    }
@@ -464,18 +464,18 @@ abstract class Gen<T>
      LocalDateTime start,
      LocalDateTime end
    ){
-     return for_(
-              Gen.localDatesBetween(start.toLocalDate(),
-                                    end.toLocalDate()),
-              Gen.localTimesBetween(start.toLocalTime(),
-                                    end.toLocalTime()),
-              (d,t) -> LocalDateTime.of(d,t)
-            );
+     return
+       for_(
+         Gen.localDatesBetween(start.toLocalDate(), end.toLocalDate()),
+         Gen.localTimesBetween(start.toLocalTime(), end.toLocalTime())
+       )
+       .yield(LocalDateTime::of);
    }
 
 
+
    //--------------------------------------------------------------------------
-   // Combinators to provide "for comprehension"-like syntax
+   // Utilities to provide "for comprehension"-like syntax
    //--------------------------------------------------------------------------
 
    @FunctionalInterface
@@ -499,88 +499,148 @@ abstract class Gen<T>
    }
 
 
-   public static <A,B,T> Gen<T> for_
-   (
-     Gen<? extends A> genA,
-     Gen<? extends B> genB,
-     BiFunction<? super A,? super B,? extends T> f
-   ){
-     return genA.flatMap(a -> genB.map(b -> f.apply(a,b)));
+
+   public static abstract class Comprehension2<A,B>
+   {
+     private Comprehension2(){};
+
+     public abstract <T> Gen<T> yield(BiFunction<? super A,? super B,T> f);
+   }
+
+   public static abstract class Comprehension3<A,B,C>
+   {
+     private Comprehension3(){};
+
+     public abstract <T> Gen<T> yield(Function3<? super A,? super B,? super C,T> f);
+   }
+
+   public static abstract class Comprehension4<A,B,C,D>
+   {
+     private Comprehension4(){};
+
+     public abstract <T> Gen<T> yield(Function4<? super A,? super B,? super C,? super D,T> f);
+   }
+
+   public static abstract class Comprehension5<A,B,C,D,E>
+   {
+     private Comprehension5(){};
+
+     public abstract <T> Gen<T> yield(Function5<? super A,? super B,? super C,? super D,? super E,T> f);
+   }
+
+   public static abstract class Comprehension6<A,B,C,D,E,F>
+   {
+     private Comprehension6(){};
+
+     public abstract <T> Gen<T> yield(Function6<? super A,? super B,? super C,? super D,? super E,? super F,T> f);
    }
 
 
-   public static <A,B,C,T> Gen<T> for_
+   public static <A,B> Comprehension2<A,B> for_
+   (
+     Gen<? extends A> genA,
+     Gen<? extends B> genB
+   ){
+     return new Comprehension2<>(){
+       @Override
+       public <T> Gen<T> yield(BiFunction<? super A,? super B,T> f){
+         return genA.flatMap(a -> genB.map(b -> f.apply(a,b)));
+       }
+     };
+   }
+
+   public static <A,B,C> Comprehension3<A,B,C> for_
+   (
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC
+   ){
+     return new Comprehension3<>(){
+       @Override
+       public <T> Gen<T> yield(Function3<? super A,? super B,? super C,T> f){
+         return
+           genA.flatMap(
+             a -> genB.flatMap(
+             b -> genC.map(
+             c -> f.apply(a,b,c)))
+           );
+       }
+     };
+   }
+
+   public static <A,B,C,D> Comprehension4<A,B,C,D> for_
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
      Gen<? extends C> genC,
-     Function3<? super A,? super B,? super C,? extends T> f
+     Gen<? extends D> genD
    ){
-     return genA.flatMap(
-              a -> genB.flatMap(
-              b -> genC.map(
-              c -> f.apply(a,b,c)))
-            );
+     return new Comprehension4<>(){
+       @Override
+       public <T> Gen<T> yield(
+         Function4<? super A,? super B,? super C,? super D,T> f
+       ){
+         return
+           genA.flatMap(
+             a -> genB.flatMap(
+             b -> genC.flatMap(
+             c -> genD.map(
+             d -> f.apply(a,b,c,d))))
+           );
+       }
+     };
    }
 
-   public static <A,B,C,D,T> Gen<T> for_
+   public static <A,B,C,D,E> Comprehension5<A,B,C,D,E> for_
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
      Gen<? extends C> genC,
      Gen<? extends D> genD,
-     Function4<? super A,? super B,? super C,? super D,? extends T> f
+     Gen<? extends E> genE
    ){
-     return genA.flatMap(
-              a -> genB.flatMap(
-              b -> genC.flatMap(
-              c -> genD.map(
-              d -> f.apply(a,b,c,d)))) 
-            );
+     return new Comprehension5<>(){
+       @Override
+       public <T> Gen<T> yield(
+         Function5<? super A,? super B,? super C,? super D,? super E,T> f
+       ){
+         return
+           genA.flatMap(
+             a -> genB.flatMap(
+             b -> genC.flatMap(
+             c -> genD.flatMap(
+             d -> genE.map(
+             e -> f.apply(a,b,c,d,e)))))
+           );
+       }
+     };
    }
 
-   public static <A,B,C,D,E,T> Gen<T> for_
+   public static <A,B,C,D,E,F> Comprehension6<A,B,C,D,E,F> for_
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
      Gen<? extends C> genC,
      Gen<? extends D> genD,
      Gen<? extends E> genE,
-     Function5<? super A,? super B,? super C,? super D,? super E,? extends T> f
+     Gen<? extends F> genF
    ){
-     return genA.flatMap(
-              a -> genB.flatMap(
-              b -> genC.flatMap(
-              c -> genD.flatMap(
-              d -> genE.map(
-              e -> f.apply(a,b,c,d,e))))) 
-            );
-   }
-
-   public static <A,B,C,D,E,F,T> Gen<T> for_
-   (
-     Gen<? extends A> genA,
-     Gen<? extends B> genB,
-     Gen<? extends C> genC,
-     Gen<? extends D> genD,
-     Gen<? extends E> genE,
-     Gen<? extends F> genF,
-     Function6<? super A,
-               ? super B,
-               ? super C,
-               ? super D,
-               ? super E,
-               ? super F,
-               ? extends T> fn
-   ){
-     return genA.flatMap(
-              a -> genB.flatMap(
-              b -> genC.flatMap(
-              c -> genD.flatMap(
-              d -> genE.flatMap(
-              e -> genF.map(
-              f -> fn.apply(a,b,c,d,e,f)))))) 
-            );
+     return new Comprehension6<>(){
+       @Override
+       public <T> Gen<T> yield(
+         Function6<? super A,? super B,? super C,? super D,? super E,? super F,T> func
+       ){
+         return
+           genA.flatMap(
+             a -> genB.flatMap(
+             b -> genC.flatMap(
+             c -> genD.flatMap(
+             d -> genE.flatMap(
+             e -> genF.map(
+             f -> func.apply(a,b,c,d,e,f))))))
+           );
+       }
+     };
    }
 
 
@@ -594,41 +654,71 @@ abstract class Gen<T>
 
 
    private static Map<Type,Gen<?>> DERIVED_GENS =
-     Stream.of(entry(int.class,            INT),
-               entry(double.class,         DOUBLE),
-               entry(boolean.class,        BOOLEAN),
-               entry(String.class,         IDENTIFIER),
-               entry(java.util.UUID.class, UUID),
-               entry(LocalDate.class,      LD_NOW),
-               entry(LocalDateTime.class,  LDT_NOW)
-//               entry(.class, ),
-              )
-              .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+     Stream.of(
+       entry(int.class,            INT),
+       entry(double.class,         DOUBLE),
+       entry(boolean.class,        BOOLEAN),
+       entry(String.class,         IDENTIFIER),
+       entry(java.util.UUID.class, UUID),
+       entry(LocalDate.class,      LD_NOW),
+       entry(LocalDateTime.class,  LDT_NOW)
+     )
+     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 
 
-   public static <T> void register(Gen<T> gen, Class<T> c){
+   public static <T> void register(Gen<? extends T> gen, Class<? extends T> c){
      DERIVED_GENS.put(c,gen);
    } 
 
-   public static <T> Gen<T> of(Class<T> cl){
-     return (Gen<T>)DERIVED_GENS.computeIfAbsent(cl, Gen::deriveFor);
+   public static <T> Gen<? extends T> of(Class<? extends T> cl){
+     return (Gen<? extends T>)DERIVED_GENS.computeIfAbsent(cl, Gen::deriveFor);
    }
 
-   private static <T> Gen<T> of(Type t){
-     return (Gen<T>)DERIVED_GENS.computeIfAbsent(t, Gen::deriveFor);
+   private static <T> Gen<? extends T> of(Type t){
+     return (Gen<? extends T>)DERIVED_GENS.computeIfAbsent(t, Gen::deriveFor);
    }
 
    private static Gen<?> deriveFor(Type t){
      return deriveFor((Class<?>)t);
    }
 
+
+   private static <T> Gen<? extends T> deriveFor(Class<? extends T> cl){
+
+     Constructor<?> cons =
+       Stream.of(cl.getDeclaredConstructors())
+         .filter(c -> Modifier.isPublic(c.getModifiers()))
+         .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
+         .get();
+      
+     Type[] signature = cons.getGenericParameterTypes();
+
+     List<Gen<?>> gens =
+       Stream.of(signature)
+             .map(Gen::of)
+             .collect(toList());
+           
+     return (Gen<? extends T>)apply(
+       rnd -> {
+         try {
+           return cons.newInstance(gens.stream().map(g -> g.next(rnd)).toArray());
+         } catch (Exception ex){
+            throw new RuntimeException(ex); 
+         }
+       }
+     );
+
+   }
+
+/*
    private static Gen<?> deriveFor(Class<?> cl){
 
-     Constructor<?> cons = Stream.of(cl.getDeclaredConstructors())
-                                 .filter(c -> Modifier.isPublic(c.getModifiers()))
-                                 .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
-                                 .get();
+     Constructor<?> cons =
+       Stream.of(cl.getDeclaredConstructors())
+         .filter(c -> Modifier.isPublic(c.getModifiers()))
+         .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
+         .get();
       
      Type[] signature = cons.getGenericParameterTypes();
 
@@ -649,6 +739,6 @@ abstract class Gen<T>
      );
      
    }
-
+*/
 
 }

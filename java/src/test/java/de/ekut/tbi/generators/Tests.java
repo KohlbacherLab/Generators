@@ -195,9 +195,9 @@ public final class Tests
     Gen<Foo> genfoo = Gen.for_(
       Gen.ints(),
       Gen.doubles(),
-      Gen.uuidStrings(),
-      Foo::new
-    );
+      Gen.uuidStrings()
+    )
+    .yield(Foo::new);
  
 
     Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
@@ -223,9 +223,9 @@ public final class Tests
       Gen.localDatesBetween(
         LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
       ),
-      Gen.optional(Gen.localDateNow()),
-      Patient::of
-    );
+      Gen.optional(Gen.localDateNow())
+    )
+    .yield(Patient::of);
  
     Gen<List<Patient>> genpatients = Gen.listOf(15,patient);
 
