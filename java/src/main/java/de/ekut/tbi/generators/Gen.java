@@ -302,6 +302,12 @@ public abstract class Gen<T>
    }
 
 
+   public static <K,T> Gen<Map.Entry<K,T>> oneOf(Map<K,T> ts){
+     return oneOf(ts.entrySet());
+   }
+
+
+
    public static <T, Gs extends Collection<Gen<T>>, Cs extends Collection<T>> Gen<Cs> oneOfEach(
      Supplier<? extends Cs> sup,
      Gs gens
