@@ -136,23 +136,29 @@ public abstract class Gen<T>
    public static final Gen<Instant> intantNow(){ return INST_NOW; }
 
 
-   private static final List<String> ALPHABET = Stream.of(
-     "a","b","c","d","e", "A","B","C","D","E",
-     "f","g","h","i","j", "F","G","H","I","J",
-     "k","l","m","n","o", "K","L","M","N","O",
-     "p","q","r","s","t", "P","Q","R","S","T",
-     "u","v","w","x","y", "U","V","W","X","Y",
-     "z",                 "Z"
-   ).collect(toList());
+   private static final List<String> ALPHABET =
+     Stream.of(
+       "a","b","c","d","e", "A","B","C","D","E",
+       "f","g","h","i","j", "F","G","H","I","J",
+       "k","l","m","n","o", "K","L","M","N","O",
+       "p","q","r","s","t", "P","Q","R","S","T",
+       "u","v","w","x","y", "U","V","W","X","Y",
+       "z",                 "Z"
+     )
+     .collect(toList());
 
-   private static final List<String> DIGITS = Stream.of(
-     "0","1","2","3","4","5","6","7","8","9" 
-   ).collect(toList());
+   private static final List<String> DIGITS =
+     Stream.of(
+       "0","1","2","3","4","5","6","7","8","9" 
+     )
+     .collect(toList());
 
 
-   private static final List<String> ALPHA_NUMERIC = Stream.concat(
-     ALPHABET.stream(), DIGITS.stream()
-   ).collect(toList());
+   private static final List<String> ALPHA_NUMERIC =
+     Stream.concat(
+       ALPHABET.stream(), DIGITS.stream()
+     )
+     .collect(toList());
    
 
    public static Gen<String> letters(int length){
@@ -274,7 +280,8 @@ public abstract class Gen<T>
          values
        )
        .yield(Gen::entry)
-     ).map(s -> s.limit(n).collect(toMap(Map.Entry::getKey,Map.Entry::getValue)));
+     )
+     .map(s -> s.limit(n).collect(toMap(Map.Entry::getKey,Map.Entry::getValue)));
    }
 
 
@@ -368,6 +375,19 @@ public abstract class Gen<T>
      );
    }
 
+
+   public static <T> Gen<T> distribution(
+     Map<T,Double> valuesWeights
+   ){
+     return distribution(
+       valuesWeights.entrySet()
+         .stream()
+         .map(e -> weighted(e.getKey(),e.getValue().doubleValue()))
+         .collect(toList())
+     );
+   }
+
+
    public static <T> Gen<T> distribution(
      List<Weighted<T>> wts
    ){
@@ -436,10 +456,12 @@ public abstract class Gen<T>
      Instant start,
      Instant end
    ){
-     return longsBetween(
-              start.toEpochMilli(),
-              end.toEpochMilli()
-            ).map(Instant::ofEpochMilli);
+     return
+       longsBetween(
+         start.toEpochMilli(),
+         end.toEpochMilli()
+       )
+       .map(Instant::ofEpochMilli);
    }
 
 
@@ -448,10 +470,12 @@ public abstract class Gen<T>
      LocalDate start,
      LocalDate end
    ){
-     return longsBetween(
-              start.toEpochDay(),
-              end.toEpochDay()
-            ).map(LocalDate::ofEpochDay);
+     return
+       longsBetween(
+         start.toEpochDay(),
+         end.toEpochDay()
+       )
+       .map(LocalDate::ofEpochDay);
    }
 
    public static Gen<LocalTime> localTimesBetween
@@ -459,10 +483,12 @@ public abstract class Gen<T>
      LocalTime start,
      LocalTime end
    ){
-     return longsBetween(
-              start.toNanoOfDay(),
-              end.toNanoOfDay()
-            ).map(LocalTime::ofNanoOfDay);
+     return
+       longsBetween(
+         start.toNanoOfDay(),
+         end.toNanoOfDay()
+       )
+       .map(LocalTime::ofNanoOfDay);
    }
 
    public static Gen<LocalDateTime> localDateTimesBetween

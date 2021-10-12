@@ -99,6 +99,7 @@ public final class Tests
     var pU = 0.10;
     var pY = 0.06;
 
+/*
     var vowelGen = Gen.distribution(
       Gen.weighted("A",pA),
       Gen.weighted("E",pE),
@@ -106,6 +107,18 @@ public final class Tests
       Gen.weighted("O",pO),
       Gen.weighted("U",pU),
       Gen.weighted("Y",pY)
+    ); 
+*/
+
+    var vowelGen = Gen.distribution(
+      Map.of(
+        "A",pA,
+        "E",pE,
+        "I",pI,
+        "O",pO,
+        "U",pU,
+        "Y",pY
+      )
     ); 
 
     var n = 100000;
