@@ -555,6 +555,15 @@ public abstract class Gen<T>
      };
    }
 
+   public static <A,B> Comprehension2<A,B> given
+   (
+     Gen<? extends A> genA,
+     Gen<? extends B> genB
+   ){
+     return for_(genA,genB);
+   }
+
+
    public static <A,B,C> Comprehension3<A,B,C> for_
    (
      Gen<? extends A> genA,
@@ -572,6 +581,15 @@ public abstract class Gen<T>
            );
        }
      };
+   }
+
+   public static <A,B,C> Comprehension3<A,B,C> given
+   (
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC
+   ){
+     return for_(genA,genB,genC);
    }
 
    public static <A,B,C,D> Comprehension4<A,B,C,D> for_
@@ -596,6 +614,17 @@ public abstract class Gen<T>
        }
      };
    }
+
+   public static <A,B,C,D> Comprehension4<A,B,C,D> given
+   (
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC,
+     Gen<? extends D> genD
+   ){
+     return for_(genA,genB,genC,genD);
+   }
+
 
    public static <A,B,C,D,E> Comprehension5<A,B,C,D,E> for_
    (
@@ -622,6 +651,18 @@ public abstract class Gen<T>
      };
    }
 
+   public static <A,B,C,D,E> Comprehension5<A,B,C,D,E> given
+   (
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC,
+     Gen<? extends D> genD,
+     Gen<? extends E> genE
+   ){
+     return for_(genA,genB,genC,genD,genE);
+   }
+
+
    public static <A,B,C,D,E,F> Comprehension6<A,B,C,D,E,F> for_
    (
      Gen<? extends A> genA,
@@ -647,6 +688,18 @@ public abstract class Gen<T>
            );
        }
      };
+   }
+
+   public static <A,B,C,D,E,F> Comprehension6<A,B,C,D,E,F> given
+   (
+     Gen<? extends A> genA,
+     Gen<? extends B> genB,
+     Gen<? extends C> genC,
+     Gen<? extends D> genD,
+     Gen<? extends E> genE,
+     Gen<? extends F> genF
+   ){
+     return for_(genA,genB,genC,genD,genE,genF);
    }
 
 
@@ -697,6 +750,8 @@ public abstract class Gen<T>
          .filter(c -> Modifier.isPublic(c.getModifiers()))
          .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
          .get();
+
+    //TODO: handle cases Collection<T> and Optional<T>
       
      Type[] signature = cons.getGenericParameterTypes();
 
@@ -717,34 +772,5 @@ public abstract class Gen<T>
 
    }
 
-/*
-   private static Gen<?> deriveFor(Class<?> cl){
-
-     Constructor<?> cons =
-       Stream.of(cl.getDeclaredConstructors())
-         .filter(c -> Modifier.isPublic(c.getModifiers()))
-         .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
-         .get();
-      
-     Type[] signature = cons.getGenericParameterTypes();
-
-     List<Gen<?>> gens = Stream.of(signature)
-                               .map(Gen::of)
-                               .collect(toList());
-           
-     return apply(
-       rnd -> {
-         try {
-           return cons.newInstance(gens.stream()
-                                .map(g -> g.next(rnd))
-                                .toArray());
-         } catch (Exception ex){
-            throw new RuntimeException(ex); 
-         }
-       }
-     );
-     
-   }
-*/
 
 }

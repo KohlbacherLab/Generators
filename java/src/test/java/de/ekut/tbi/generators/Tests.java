@@ -117,9 +117,10 @@ public final class Tests
     var numU = 0;
     var numY = 0;
 
-    var vowels = Stream.generate(() -> vowelGen.next(RND))
-                       .limit(n)
-                       .collect(toList());
+    var vowels =
+      Stream.generate(() -> vowelGen.next(RND))
+        .limit(n)
+        .collect(toList());
 
     for (String vowel : vowels){
 
@@ -177,9 +178,12 @@ public final class Tests
 
     int n = 10;
 
-    Gen<Map<Integer,String>> maps = Gen.mapOf(n,
-                                              Gen.indices(),
-                                              Gen.alphaNumeric(15));
+    Gen<Map<Integer,String>> maps =
+      Gen.mapOf(
+        n,
+        Gen.indices(),
+        Gen.alphaNumeric(15)
+      );
 
     var map = maps.next(RND);
 
@@ -224,20 +228,21 @@ public final class Tests
   @Test
   public void testPatientGen(){
 
-    Gen<Patient> patient = Gen.for_(
-      Gen.uuidStrings(),
-      Gen.oneOf(
-        Patient.Gender.MALE,
-        Patient.Gender.FEMALE,
-        Patient.Gender.OTHER,
-        Patient.Gender.UNKNOWN
-      ),
-      Gen.localDatesBetween(
-        LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
-      ),
-      Gen.optional(Gen.localDateNow())
-    )
-    .yield(Patient::of);
+    Gen<Patient> patient =
+      Gen.for_(
+        Gen.uuidStrings(),
+        Gen.oneOf(
+          Patient.Gender.MALE,
+          Patient.Gender.FEMALE,
+          Patient.Gender.OTHER,
+          Patient.Gender.UNKNOWN
+        ),
+        Gen.localDatesBetween(
+          LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
+        ),
+        Gen.optional(Gen.localDateNow())
+      )
+      .yield(Patient::of);
  
     Gen<List<Patient>> genpatients = Gen.listOf(15,patient);
 
