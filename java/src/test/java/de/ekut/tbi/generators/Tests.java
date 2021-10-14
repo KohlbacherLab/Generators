@@ -24,9 +24,7 @@ public final class Tests
     public final int i;
     public final double d;
     public final List<String> s;
-//    public final String s;
 
-//    public Foo(int i, double d, String s){
     public Foo(
       int i,
       double d,
@@ -44,6 +42,38 @@ public final class Tests
   }
   
 
+  private static final class Bar {
+
+    private int i;
+    private double d;
+    private List<String> s;
+
+    public Bar(){ }
+
+    public Bar setInt(int i){
+      this.i = i;
+      return this;
+    }
+
+    public Bar setDouble(double d){
+      this.d = d;
+      return this;
+    }
+
+    public Bar setStrings(final List<String> s){
+      this.s = s;
+      return this;
+    }
+
+    @Override
+    public String toString(){
+      return "Bar(" + i + "," + d + "," + s + ")";
+    }
+  }
+ 
+
+
+ 
   @Test
   public void testIntGen(){
 
@@ -244,6 +274,26 @@ public final class Tests
 
   }
 
+
+  @Test
+  public void testBarGenDerivation(){
+
+    Gen<Bar> genBar =
+      Gen.deriveFor(
+        Bar.class,
+        Map.of(
+          int.class, Gen.intsBetween(1,42),
+          String.class, Gen.constant("bar")
+        )
+      );
+ 
+    Gen<List<Bar>> genBars = Gen.listOf(15,genBar);
+
+    List<Bar> bars = genBars.next(RND);
+
+    assertTrue(bars.size() == 15);
+
+  }
 
   @Test
   public void testPatientGen(){
