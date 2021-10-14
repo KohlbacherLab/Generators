@@ -8,7 +8,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.AbstractList;
+import java.util.AbstractSet;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
@@ -35,6 +36,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 
+import static de.ekut.tbi.generators.Utils.*;
 
 
 public abstract class Gen<T>
@@ -294,9 +296,10 @@ public abstract class Gen<T>
    public static <T> Gen<T> oneOf(T t1, T t2, T... ts)
    {
 
-     List<T> vals = Stream.concat(Stream.of(t1,t2),
-                                  Stream.of(ts))
-                          .collect(toList());
+     List<T> vals =
+       Stream.concat(Stream.of(t1,t2),Stream.of(ts))
+         .collect(toList());
+
      return oneOf(vals);
    }
 
@@ -756,15 +759,28 @@ public abstract class Gen<T>
      DERIVED_GENS.put(c,gen);
    } 
 
-   public static <T> Gen<T> of(Class<? extends T> cl){
-     return (Gen<T>)DERIVED_GENS.computeIfAbsent(cl, Gen::deriveFor);
+
+   public static <T> Gen<T> deriveFor(Class<? extends T> cl, Map<Type,Gen<?>> gens){
+     return (Gen<T>)deriveForImpl(cl, Optional.of(gens).filter(Map::isEmpty));
    }
 
-   private static <T> Gen<T> of(Type t){
-     return (Gen<T>)DERIVED_GENS.computeIfAbsent(t, Gen::deriveFor);
+   public static <T> Gen<T> deriveFor(Class<? extends T> cl){
+      return (Gen<T>)deriveForImpl(cl, Optional.empty());
    }
 
+   private static <T> Gen<T> deriveFor(Type t, Optional<Map<Type,Gen<?>>> gens){
+     return (Gen<T>)deriveForImpl(t, gens);
+   }
+
+   private static <T> Gen<T> deriveFor(Type t){
+     return (Gen<T>)deriveForImpl(t, Optional.empty());
+   }
+
+/*
    private static Gen<?> deriveFor(Type t){
+
+    //TODO: handle cases Collection<T> and Optional<T>
+      
      return deriveFor((Class<?>)t);
    }
 
@@ -777,8 +793,6 @@ public abstract class Gen<T>
          .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
          .get();
 
-    //TODO: handle cases Collection<T> and Optional<T>
-      
      Type[] signature = cons.getGenericParameterTypes();
 
      List<Gen<?>> gens =
@@ -796,6 +810,118 @@ public abstract class Gen<T>
        }
      );
 
+   }
+*/
+
+
+   private static final Map<Class<? extends Collection>,Class<? extends Collection>> DEFAULT_COLLECTION_CLASSES =
+     Stream.of(
+       entry(List.class, ArrayList.class),
+       entry(AbstractList.class, ArrayList.class),
+       entry(AbstractSet.class, HashSet.class),
+       entry(Set.class,  HashSet.class)
+     )
+     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+
+   private static Gen<?> deriveForImpl(Type t, Optional<Map<Type,Gen<?>>> gens){
+
+     // Case: Type is some parameterized type C<T>
+     if (isParameterized(t)){
+
+       Class<?> rawType = getRawType(t);
+
+       // Case: Type C<T> is Optional<T>
+       if (isOptional(t)){
+
+         Gen<?> genT = deriveFor(getParameterType(t), gens); 
+
+         return Gen.optional(genT); 
+
+       // Case: Type C<T> is some Collection<T>
+       } else if (isCollection(t)){
+
+         Gen<?> genT = deriveFor(getParameterType(t), gens); 
+
+         try {
+        
+           Constructor<? extends Collection> con =
+             DEFAULT_COLLECTION_CLASSES.getOrDefault((Class<? extends Collection>)rawType, (Class<? extends Collection>)rawType)
+               .getConstructor();
+ 
+           return Gen.apply(
+             rnd -> {
+               try {
+                 Collection coll = con.newInstance();
+                 for (int i = 0; i < 5; i++){
+                   coll.add(genT.next(rnd));
+                 }
+                 return coll;
+               } catch (Exception e){
+           e.printStackTrace();
+                 throw new RuntimeException(e);
+               }
+             }
+           );
+
+         } catch (Exception e){
+           e.printStackTrace();
+           throw new RuntimeException(e);
+         }
+
+       } else {   
+         throw new IllegalStateException("Unhandled case for Generator derivation!");
+       }
+
+     // Case: Any other type expected 'normal'
+     } else {
+       return deriveForImpl(Class.class.cast(t), gens);
+     }
+   }
+
+
+   private static <T> Gen<T> deriveForImpl(Class<? extends T> cl, Optional<Map<Type,Gen<?>>> defaultGens){
+  
+//     System.out.println("Deriving Generator for class: " + cl.getName());
+
+     //TODO: handle case where Class doesn't have non-default constructor, i.e.
+     // - use static builder function
+     // - use default constructor and set fields
+
+     return
+       defaultGens
+         .flatMap(g -> Optional.ofNullable((Gen<T>)g.get(cl)))
+         .orElseGet(
+           () ->
+             (Gen<T>)DERIVED_GENS.computeIfAbsent(
+               cl,
+               unused -> {
+             
+                 Constructor<?> cons =
+                   Stream.of(cl.getDeclaredConstructors())
+                     .filter(c -> Modifier.isPublic(c.getModifiers()))
+                     .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
+                     .get();
+            
+                 Type[] signature = cons.getGenericParameterTypes();
+            
+                 List<Gen<?>> gens =
+                   Stream.of(signature)
+                         .map(Gen::deriveFor)
+                         .collect(toList());
+                       
+                 return (Gen<T>)apply(
+                   rnd -> {
+                     try {
+                       return cons.newInstance(gens.stream().map(g -> g.next(rnd)).toArray());
+                     } catch (Exception ex){
+                        throw new RuntimeException(ex); 
+                     }
+                   }
+                 );
+               }
+             )
+         );
    }
 
 

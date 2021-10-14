@@ -23,9 +23,15 @@ public final class Tests
 
     public final int i;
     public final double d;
-    public final String s;
+    public final List<String> s;
+//    public final String s;
 
-    public Foo(int i, double d, String s){
+//    public Foo(int i, double d, String s){
+    public Foo(
+      int i,
+      double d,
+      List<String> s
+    ){
       this.i = i;
       this.d = d;
       this.s = s;
@@ -211,7 +217,8 @@ public final class Tests
     Gen<Foo> genfoo = Gen.for_(
       Gen.ints(),
       Gen.doubles(),
-      Gen.uuidStrings()
+      Gen.listOf(5,Gen.uuidStrings())
+//      Gen.uuidStrings()
     )
     .yield(Foo::new);
  
@@ -227,7 +234,7 @@ public final class Tests
   @Test
   public void testFooGenDerivation(){
 
-    Gen<Foo> genfoo = Gen.of(Foo.class);
+    Gen<Foo> genfoo = Gen.deriveFor(Foo.class);
  
     Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
 
