@@ -829,6 +829,7 @@ public abstract class Gen<T>
 
 //TODO: Handle Enum types
 
+
      // Case: Type is some parameterized type C<T>
      if (isParameterized(t)){
 
@@ -904,7 +905,14 @@ public abstract class Gen<T>
 
 
   private static <T> Gen<T> buildGenFor(Class<? extends T> cl, Optional<Map<Type,Gen<?>>> defaultGens){
-   
+  
+
+    if (cl.isEnum()){
+
+      return oneOf(Stream.of(cl.getEnumConstants()).collect(toList())); 
+
+    } else {
+ 
     // 1. Strategy: Look up non-default constructor with longest parameter signature
     //              to generate T instances accordingly
     Optional<Constructor<?>> nonDefaultCons =
@@ -974,7 +982,7 @@ public abstract class Gen<T>
       }
     }
 
-
+    }
   }
 
 }

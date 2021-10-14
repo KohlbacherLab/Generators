@@ -295,6 +295,16 @@ public final class Tests
 
   }
 
+
+  @Test
+  public void testEnumGenDerivation(){
+
+    Gen<Patient.Gender> genderGen =
+      Gen.deriveFor(Patient.Gender.class);
+
+  }
+
+
   @Test
   public void testPatientGen(){
 
