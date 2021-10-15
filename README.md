@@ -160,7 +160,7 @@ public final class Patient
 // (syntax analogous to Scala "for comprehensions"):
 // ----------------------------------------------------------------------------
 
-Gen<Patient> genpat = Gen.for_(
+Gen<Patient> genPat = Gen.given(
   Gen.uuidStrings(),                   // Gen of identifier Strings
   Gen.oneOf(Patient.Gender.MALE,       // Gen of values from closed value set: here Gender
             Patient.Gender.FEMALE,
@@ -175,8 +175,25 @@ Gen<Patient> genpat = Gen.for_(
 
 
 
-// WORK IN PROGRESS:
+// ----------------------------------------------------------------------------
 // Automatic derivation of Gen<T> from T constructor or factory method type signature
+// ----------------------------------------------------------------------------
+
+Gen<Patient> genPatDerived = Gen.deriveFor(Patient.class);  // Will use default generators for all primitives the type is broken down to
+
+Gen.register(String.class, Gen.letters(42));  // Register the generator of String of 42 letters wherever type String is encountered in subsequent derivation calls
+
+...
+
+Gen<Bar> genBar = // Derive a generator for class Bar...
+  Gen.deriveFor(  
+    Bar.class,
+    Map.of(       // ... using the following generators wherever the key type is encountered
+      int.class, Gen.intsBetween(1,42),
+      String.class, Gen.constant("bar")
+    )
+  );
+
 
 
 // ----------------------------------------------------------------------------
@@ -187,12 +204,12 @@ Gen<Patient> genpat = Gen.for_(
 Random rnd = new Random(42);
 
 
-Patient pat = genpat.next(rnd)
+Patient pat = genPat.next(rnd)
 
 // Create Generator of Patient-Lists with size 15
-Gen<List<Patient>> genpatients = Gen.listOf(15,genpat);
+Gen<List<Patient>> genPatients = Gen.listOf(15,genPat);
 
-List<Patient> patients = genpatients.next(rnd);
+List<Patient> patients = genPatients.next(rnd);
 
 
 // Usage with Streams

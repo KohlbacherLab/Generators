@@ -23,7 +23,6 @@ public final class Patient
 
 
   private Patient(
-//  public Patient(
     String id,
     Gender gender,
     LocalDate birthDate,
@@ -42,7 +41,6 @@ public final class Patient
     LocalDate birthDate,
     Optional<LocalDate> dateOfDeath
   ){
-//    return new Patient(id,gender,birthDate);
     return new Patient(id,gender,birthDate,dateOfDeath);
   }
 
@@ -53,6 +51,7 @@ public final class Patient
               id      + "," +
               gender  + "," + 
               birthDate.format(ISO_LOCAL_DATE) +
+              dateOfDeath.map(d -> "," + d.format(ISO_LOCAL_DATE)).orElse("") +
            ")";
   } 
 

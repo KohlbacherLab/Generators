@@ -278,7 +278,7 @@ public abstract class Gen<T>
      Gen<V> values
    ){
      return stream(
-       Gen.for_(
+       Gen.given(
          keys,
          values
        )
@@ -501,7 +501,7 @@ public abstract class Gen<T>
      LocalDateTime end
    ){
      return
-       for_(
+       given(
          Gen.localDatesBetween(start.toLocalDate(), end.toLocalDate()),
          Gen.localTimesBetween(start.toLocalTime(), end.toLocalTime())
        )
@@ -572,7 +572,7 @@ public abstract class Gen<T>
    }
 
 
-   public static <A,B> Comprehension2<A,B> for_
+   public static <A,B> Comprehension2<A,B> given
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB
@@ -585,16 +585,8 @@ public abstract class Gen<T>
      };
    }
 
-   public static <A,B> Comprehension2<A,B> given
-   (
-     Gen<? extends A> genA,
-     Gen<? extends B> genB
-   ){
-     return for_(genA,genB);
-   }
 
-
-   public static <A,B,C> Comprehension3<A,B,C> for_
+   public static <A,B,C> Comprehension3<A,B,C> given
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
@@ -613,16 +605,8 @@ public abstract class Gen<T>
      };
    }
 
-   public static <A,B,C> Comprehension3<A,B,C> given
-   (
-     Gen<? extends A> genA,
-     Gen<? extends B> genB,
-     Gen<? extends C> genC
-   ){
-     return for_(genA,genB,genC);
-   }
 
-   public static <A,B,C,D> Comprehension4<A,B,C,D> for_
+   public static <A,B,C,D> Comprehension4<A,B,C,D> given
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
@@ -645,18 +629,8 @@ public abstract class Gen<T>
      };
    }
 
-   public static <A,B,C,D> Comprehension4<A,B,C,D> given
-   (
-     Gen<? extends A> genA,
-     Gen<? extends B> genB,
-     Gen<? extends C> genC,
-     Gen<? extends D> genD
-   ){
-     return for_(genA,genB,genC,genD);
-   }
 
-
-   public static <A,B,C,D,E> Comprehension5<A,B,C,D,E> for_
+   public static <A,B,C,D,E> Comprehension5<A,B,C,D,E> given
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
@@ -681,19 +655,8 @@ public abstract class Gen<T>
      };
    }
 
-   public static <A,B,C,D,E> Comprehension5<A,B,C,D,E> given
-   (
-     Gen<? extends A> genA,
-     Gen<? extends B> genB,
-     Gen<? extends C> genC,
-     Gen<? extends D> genD,
-     Gen<? extends E> genE
-   ){
-     return for_(genA,genB,genC,genD,genE);
-   }
 
-
-   public static <A,B,C,D,E,F> Comprehension6<A,B,C,D,E,F> for_
+   public static <A,B,C,D,E,F> Comprehension6<A,B,C,D,E,F> given
    (
      Gen<? extends A> genA,
      Gen<? extends B> genB,
@@ -720,17 +683,6 @@ public abstract class Gen<T>
      };
    }
 
-   public static <A,B,C,D,E,F> Comprehension6<A,B,C,D,E,F> given
-   (
-     Gen<? extends A> genA,
-     Gen<? extends B> genB,
-     Gen<? extends C> genC,
-     Gen<? extends D> genD,
-     Gen<? extends E> genE,
-     Gen<? extends F> genF
-   ){
-     return for_(genA,genB,genC,genD,genE,genF);
-   }
 
 
 
@@ -744,7 +696,11 @@ public abstract class Gen<T>
 
    private static Map<Type,Gen<?>> DERIVED_GENS =
      Stream.of(
+       entry(Integer.class,        INT.map(Integer::valueOf)),
+       entry(Double.class,         DOUBLE.map(Double::valueOf)),
+       entry(Float.class,          FLOAT.map(Float::valueOf)),
        entry(int.class,            INT),
+       entry(float.class,          FLOAT),
        entry(double.class,         DOUBLE),
        entry(boolean.class,        BOOLEAN),
        entry(String.class,         IDENTIFIER),
@@ -761,58 +717,21 @@ public abstract class Gen<T>
    } 
 
 
-   public static <T> Gen<T> deriveFor(Class<? extends T> cl, Map<Type,Gen<?>> gens){
-     return (Gen<T>)deriveForImpl(cl, Optional.of(gens).filter(m -> !m.isEmpty()));
+   public static <T> Gen<T> deriveFor(Class<? extends T> cl, Map<Type,Gen<?>> defaultGens){
+     return (Gen<T>)deriveForImpl(cl, Optional.of(defaultGens).filter(m -> !m.isEmpty()));
    }
 
    public static <T> Gen<T> deriveFor(Class<? extends T> cl){
       return (Gen<T>)deriveForImpl(cl, Optional.empty());
    }
 
-   private static <T> Gen<T> deriveFor(Type t, Optional<Map<Type,Gen<?>>> gens){
-     return (Gen<T>)deriveForImpl(t, gens);
+   private static <T> Gen<T> deriveFor(Type t, Optional<Map<Type,Gen<?>>> defaultGens){
+     return (Gen<T>)deriveForImpl(t, defaultGens);
    }
 
    private static <T> Gen<T> deriveFor(Type t){
      return (Gen<T>)deriveForImpl(t, Optional.empty());
    }
-
-/*
-   private static Gen<?> deriveFor(Type t){
-
-    //TODO: handle cases Collection<T> and Optional<T>
-      
-     return deriveFor((Class<?>)t);
-   }
-
-
-   private static <T> Gen<T> deriveFor(Class<? extends T> cl){
-
-     Constructor<?> cons =
-       Stream.of(cl.getDeclaredConstructors())
-         .filter(c -> Modifier.isPublic(c.getModifiers()))
-         .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount())
-         .get();
-
-     Type[] signature = cons.getGenericParameterTypes();
-
-     List<Gen<?>> gens =
-       Stream.of(signature)
-             .map(Gen::of)
-             .collect(toList());
-           
-     return (Gen<T>)apply(
-       rnd -> {
-         try {
-           return cons.newInstance(gens.stream().map(g -> g.next(rnd)).toArray());
-         } catch (Exception ex){
-            throw new RuntimeException(ex); 
-         }
-       }
-     );
-
-   }
-*/
 
 
    private static final Map<Class<? extends Collection>,Class<? extends Collection>> DEFAULT_COLLECTION_CLASSES =
@@ -826,8 +745,6 @@ public abstract class Gen<T>
 
 
    private static Gen<?> deriveForImpl(Type t, Optional<Map<Type,Gen<?>>> gens){
-
-//TODO: Handle Enum types
 
 
      // Case: Type is some parameterized type C<T>
@@ -857,24 +774,24 @@ public abstract class Gen<T>
              rnd -> {
                try {
                  Collection coll = con.newInstance();
-                 for (int i = 0; i < 5; i++){
+                 for (int i = 0; i < intsBetween(2,10).next(rnd); i++){
                    coll.add(genT.next(rnd));
                  }
                  return coll;
                } catch (Exception e){
-           e.printStackTrace();
                  throw new RuntimeException(e);
                }
              }
            );
 
+//TODO: handle Map<K,V> in addition to Collection<T> types
+
          } catch (Exception e){
-           e.printStackTrace();
            throw new RuntimeException(e);
          }
 
        } else {   
-         throw new IllegalStateException("Unhandled case for Generator derivation!");
+         throw new IllegalStateException("Unsupported case for Generator derivation of parameterized type!");
        }
 
      // Case: Any other type expected 'normal'
@@ -905,82 +822,117 @@ public abstract class Gen<T>
 
 
   private static <T> Gen<T> buildGenFor(Class<? extends T> cl, Optional<Map<Type,Gen<?>>> defaultGens){
-  
 
     if (cl.isEnum()){
 
-      return oneOf(Stream.of(cl.getEnumConstants()).collect(toList())); 
+//      return oneOf(Stream.of(cl.getEnumConstants()).collect(toList()));
+      Gen<?> enumGen =
+        defaultGens.isPresent() ?
+          defaultGens.get().getOrDefault(cl,oneOf(Stream.of(cl.getEnumConstants()).collect(toList()))) :
+          oneOf(Stream.of(cl.getEnumConstants()).collect(toList()));
+
+      return (Gen<T>)enumGen;
 
     } else {
  
-    // 1. Strategy: Look up non-default constructor with longest parameter signature
-    //              to generate T instances accordingly
-    Optional<Constructor<?>> nonDefaultCons =
-      Stream.of(cl.getConstructors())
-        .filter(c -> c.getParameterCount() > 0)
-        .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount());
-
-    if (nonDefaultCons.isPresent()){
-
-      Constructor<?> cons = nonDefaultCons.get();
-    
-      Type[] signature = cons.getGenericParameterTypes();
-    
-      List<Gen<?>> gens =
-        Stream.of(signature)
-              .map(c -> deriveFor(c, defaultGens))
-              .collect(toList());
-            
-      return (Gen<T>)apply(
-        rnd -> {
-          try {
-            return cons.newInstance(gens.stream().map(g -> g.next(rnd)).toArray());
-          } catch (Exception ex){
-             throw new RuntimeException(ex); 
-          }
-        }
-      );
-
-    } else {
-
-      // 2. Strategy: Look up default constructor and list of setter methods
-      //              to create empty instances and invoke the setters successively
-      try {
-
-        Constructor<?> defaultCons = cl.getConstructor();
-        
-        List<Map.Entry<Method,Gen<?>>> settersGens =
-          Stream.of(cl.getMethods())
-            .filter(m -> m.getName().startsWith("set") && m.getParameterCount() == 1)
-            .map(m -> Gen.<Method,Gen<?>>entry(m,deriveFor(m.getGenericParameterTypes()[0], defaultGens)))
-            .collect(toList());
-           
+      // 1. Strategy: Look up non-default constructor with longest parameter signature
+      //              to generate T instances accordingly
+      Optional<Constructor<?>> nonDefaultCons =
+        Stream.of(cl.getConstructors())
+          .filter(c -> c.getParameterCount() > 0)
+          .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount());
+  
+      if (nonDefaultCons.isPresent()){
+  
+        Constructor<?> cons = nonDefaultCons.get();
+      
+        Type[] signature = cons.getGenericParameterTypes();
+      
+        List<Gen<?>> gens =
+          Stream.of(signature)
+                .map(c -> deriveFor(c, defaultGens))
+                .collect(toList());
+              
         return (Gen<T>)apply(
           rnd -> {
             try {
-              Object obj = defaultCons.newInstance();
-        
-              for (Map.Entry<Method,Gen<?>> entry : settersGens){
-                Method m = entry.getKey();
-                Object v = entry.getValue().next(rnd);
-        
-                m.invoke(obj,v);   
-              }
-              return obj;
-        
+              return cons.newInstance(gens.stream().map(g -> g.next(rnd)).toArray());
             } catch (Exception ex){
                throw new RuntimeException(ex); 
             }
-          } 
+          }
         );
-      } catch (NoSuchMethodException ex){
-
-//TODO
-      // 3. Strategy: Look up static builder method with longest parameter signature
-      //              to create T instance
-         throw new RuntimeException(ex); 
+  
+      } else {
+  
+        // 2. Strategy: Look up default constructor and list of setter methods
+        //              to create empty instances and invoke the setters successively
+        try {
+  
+          Constructor<?> defaultCons = cl.getConstructor();
+          
+          List<Map.Entry<Method,Gen<?>>> settersGens =
+            Stream.of(cl.getMethods())
+              .filter(m -> m.getName().startsWith("set") && m.getParameterCount() == 1)
+              .map(m -> Gen.<Method,Gen<?>>entry(m,deriveFor(m.getGenericParameterTypes()[0], defaultGens)))
+              .collect(toList());
+             
+          return (Gen<T>)apply(
+            rnd -> {
+              try {
+                Object obj = defaultCons.newInstance();
+          
+                for (Map.Entry<Method,Gen<?>> entry : settersGens){
+                  Method m = entry.getKey();
+                  Object v = entry.getValue().next(rnd);
+          
+                  m.invoke(obj,v);   
+                }
+                return obj;
+          
+              } catch (Exception ex){
+                 throw new RuntimeException(ex); 
+              }
+            } 
+          );
+        } catch (NoSuchMethodException ex){
+  
+          // 3. Strategy: Look up static builder method with longest parameter signature
+          //              to create T instance
+  
+          Optional<Method> optBuilder =
+            Stream.of(cl.getMethods())
+              .filter(m -> Modifier.isPublic(m.getModifiers()) &&
+                           Modifier.isStatic(m.getModifiers()) && 
+                           m.getReturnType().equals(cl))
+              .max((m1,m2) -> m1.getParameterCount() - m2.getParameterCount());
+              
+          if (optBuilder.isPresent()){
+  
+            Method builder = optBuilder.get();
+  
+            Type[] signature = builder.getGenericParameterTypes();
+            
+            List<Gen<?>> gens =
+              Stream.of(signature)
+                    .map(c -> deriveFor(c, defaultGens))
+                    .collect(toList());
+                  
+            return (Gen<T>)apply(
+              rnd -> {
+                try {
+                  return builder.invoke(null, gens.stream().map(g -> g.next(rnd)).toArray());
+                } catch (Exception e){
+                   throw new RuntimeException(e); 
+                }
+              }
+            );
+  
+          } else {
+            throw new RuntimeException(ex); 
+          }
+        }
       }
-    }
 
     }
   }

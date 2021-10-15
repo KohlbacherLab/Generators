@@ -244,11 +244,10 @@ public final class Tests
   @Test
   public void testFooGen(){
 
-    Gen<Foo> genfoo = Gen.for_(
+    Gen<Foo> genfoo = Gen.given(
       Gen.ints(),
       Gen.doubles(),
       Gen.listOf(5,Gen.uuidStrings())
-//      Gen.uuidStrings()
     )
     .yield(Foo::new);
  
@@ -264,13 +263,8 @@ public final class Tests
   @Test
   public void testFooGenDerivation(){
 
-    Gen<Foo> genfoo = Gen.deriveFor(Foo.class);
- 
-    Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
-
-    List<Foo> foos = genfoos.next(RND);
-
-    assertTrue(foos.size() == 15);
+    Gen<Foo> genfoo =
+      Gen.deriveFor(Foo.class);
 
   }
 
@@ -287,12 +281,6 @@ public final class Tests
         )
       );
  
-    Gen<List<Bar>> genBars = Gen.listOf(15,genBar);
-
-    List<Bar> bars = genBars.next(RND);
-
-    assertTrue(bars.size() == 15);
-
   }
 
 
@@ -306,10 +294,19 @@ public final class Tests
 
 
   @Test
-  public void testPatientGen(){
+  public void testPatientGenDerivation(){
+
+    Gen<Patient> genPatient =
+      Gen.deriveFor(Patient.class);
+
+  }
+
+
+  @Test
+  public void testComposedPatientGen(){
 
     Gen<Patient> patient =
-      Gen.for_(
+      Gen.given(
         Gen.uuidStrings(),
         Gen.oneOf(
           Patient.Gender.MALE,
