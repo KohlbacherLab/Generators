@@ -46,7 +46,7 @@ public final class Tests
 
     private int i;
     private double d;
-    private List<String> s;
+    private Map<String,String> s;
 
     public Bar(){ }
 
@@ -60,7 +60,7 @@ public final class Tests
       return this;
     }
 
-    public Bar setStrings(final List<String> s){
+    public Bar setStrings(final Map<String,String> s){
       this.s = s;
       return this;
     }
@@ -260,31 +260,30 @@ public final class Tests
   }
 
 
-  @Test
+  @Test(expected = Test.None.class)
   public void testFooGenDerivation(){
 
-    Gen<Foo> genfoo =
+    Gen<Foo> genFoo =
       Gen.deriveFor(Foo.class);
 
   }
 
 
-  @Test
+  @Test(expected = Test.None.class)
   public void testBarGenDerivation(){
 
     Gen<Bar> genBar =
       Gen.deriveFor(
         Bar.class,
         Map.of(
-          int.class, Gen.intsBetween(1,42),
-          String.class, Gen.constant("bar")
+          int.class, Gen.intsBetween(1,42)
         )
       );
  
   }
 
 
-  @Test
+  @Test(expected = Test.None.class)
   public void testEnumGenDerivation(){
 
     Gen<Patient.Gender> genderGen =
@@ -293,7 +292,7 @@ public final class Tests
   }
 
 
-  @Test
+  @Test(expected = Test.None.class)
   public void testPatientGenDerivation(){
 
     Gen<Patient> genPatient =

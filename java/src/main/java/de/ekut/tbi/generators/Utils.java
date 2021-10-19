@@ -7,6 +7,7 @@ import java.lang.reflect.ParameterizedType;
 
 import java.util.Optional;
 import java.util.Collection;
+import java.util.Map;
 
 
 final class Utils 
@@ -47,6 +48,21 @@ final class Utils
           .map(t -> t.getRawType())
           .map(Class.class::cast)
           .filter(Collection.class::isAssignableFrom)
+          .isPresent();
+    } catch (ClassCastException cce){
+      return false;
+    }
+  }
+
+
+  static boolean isMap(Type type)
+  {
+    try {
+      return
+        Optional.ofNullable(ParameterizedType.class.cast(type))
+          .map(t -> t.getRawType())
+          .map(Class.class::cast)
+          .filter(Map.class::isAssignableFrom)
           .isPresent();
     } catch (ClassCastException cce){
       return false;
