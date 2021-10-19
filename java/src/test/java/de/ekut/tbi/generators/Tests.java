@@ -326,4 +326,14 @@ public final class Tests
   }
 
 
+  @Test(expected = Test.None.class)
+  public void testLombokDTOGenDerivation(){
+
+    Gen<LombokDTO.Foo> genFoo =
+      Gen.deriveFor(LombokDTO.Foo.class);
+
+    System.out.println(genFoo.next(RND));
+
+  }
+
 }

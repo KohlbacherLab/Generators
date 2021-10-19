@@ -775,13 +775,15 @@ public abstract class Gen<T>
       entry(Double.class,         DOUBLE.map(Double::valueOf)),
       entry(Float.class,          FLOAT.map(Float::valueOf)),
       entry(int.class,            INT),
+      entry(long.class,           LONG),
       entry(float.class,          FLOAT),
       entry(double.class,         DOUBLE),
       entry(boolean.class,        BOOLEAN),
-      entry(String.class,         IDENTIFIER),
+      entry(String.class,         Gen.constant("Lorem ipsum dolor sit amet, consectetur adipisici elit...")),
       entry(java.util.UUID.class, UUID),
       entry(LocalDate.class,      LD_NOW),
-      entry(LocalDateTime.class,  LDT_NOW)
+      entry(LocalDateTime.class,  LDT_NOW),
+      entry(Instant.class,        INST_NOW)
     )
     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
@@ -1011,6 +1013,7 @@ public abstract class Gen<T>
               }
             } 
           );
+
         } catch (NoSuchMethodException ex){
   
           // 3. Strategy: Look up static builder method with longest parameter signature
@@ -1020,6 +1023,7 @@ public abstract class Gen<T>
             Stream.of(cl.getMethods())
               .filter(m -> Modifier.isPublic(m.getModifiers()) &&
                            Modifier.isStatic(m.getModifiers()) && 
+                           m.getParameterCount() > 0 &&
                            m.getReturnType().equals(cl))
               .max((m1,m2) -> m1.getParameterCount() - m2.getParameterCount());
               
@@ -1045,11 +1049,37 @@ public abstract class Gen<T>
             );
   
           } else {
-            throw new RuntimeException(ex); 
+
+            // 4. Strategy: Look up static parameter-less builder method to create T instance
+  
+            Optional<Method> optBuilder2 =
+              Stream.of(cl.getMethods())
+                .filter(m -> Modifier.isPublic(m.getModifiers()) &&
+                             Modifier.isStatic(m.getModifiers()) && 
+                             m.getParameterCount() == 0 &&
+                             m.getReturnType().equals(cl))
+                .findFirst();
+                
+            if (optBuilder2.isPresent()){
+          
+              Method builder = optBuilder2.get();
+          
+              return (Gen<T>)supply(
+                () -> {
+                  try {
+                    return builder.invoke(null);
+                  } catch (Exception e){
+                     throw new RuntimeException(e); 
+                  }
+                }
+              );
+          
+            } else {
+              throw new RuntimeException(ex); 
+            }
           }
         }
       }
-
     }
   }
 
