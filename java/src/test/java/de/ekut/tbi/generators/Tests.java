@@ -244,12 +244,13 @@ public final class Tests
   @Test
   public void testFooGen(){
 
-    Gen<Foo> genfoo = Gen.given(
-      Gen.ints(),
-      Gen.doubles(),
-      Gen.listOf(5,Gen.uuidStrings())
-    )
-    .yield(Foo::new);
+    Gen<Foo> genfoo =
+      Gen.given(
+        Gen.ints(),
+        Gen.doubles(),
+        Gen.listOf(5,Gen.uuidStrings())
+      )
+      .yield(Foo::new);
  
     Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
 
@@ -258,6 +259,35 @@ public final class Tests
     assertTrue(foos.size() == 15);
 
   }
+
+
+  @Test
+  public void testComposedPatientGen(){
+
+    Gen<Patient> patient =
+      Gen.given(
+        Gen.uuidStrings(),
+        Gen.distribution(
+          Patient.Gender.MALE,    48,
+          Patient.Gender.FEMALE,  48,
+          Patient.Gender.OTHER,   1,
+          Patient.Gender.UNKNOWN, 1
+        ),
+        Gen.localDatesBetween(
+          LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
+        ),
+        Gen.optional(Gen.localDateNow())
+      )
+      .yield(Patient::of);
+ 
+    Gen<List<Patient>> genpatients = Gen.listOf(15,patient);
+
+    List<Patient> patients = genpatients.next(RND);
+
+    assertTrue(patients.size() == 15);
+ 
+  }
+
 
 
   @Test(expected = Test.None.class)
@@ -298,34 +328,6 @@ public final class Tests
     Gen<Patient> genPatient =
       Gen.deriveFor(Patient.class);
 
-  }
-
-
-  @Test
-  public void testComposedPatientGen(){
-
-    Gen<Patient> patient =
-      Gen.given(
-        Gen.uuidStrings(),
-        Gen.oneOf(
-          Patient.Gender.MALE,
-          Patient.Gender.FEMALE,
-          Patient.Gender.OTHER,
-          Patient.Gender.UNKNOWN
-        ),
-        Gen.localDatesBetween(
-          LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
-        ),
-        Gen.optional(Gen.localDateNow())
-      )
-      .yield(Patient::of);
- 
-    Gen<List<Patient>> genpatients = Gen.listOf(15,patient);
-
-    List<Patient> patients = genpatients.next(RND);
-
-    assertTrue(patients.size() == 15);
- 
   }
 
 

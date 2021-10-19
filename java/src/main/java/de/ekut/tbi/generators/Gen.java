@@ -367,6 +367,77 @@ public abstract class Gen<T>
   }
 
 
+
+  public static <T> Gen<T> distribution(
+    T t1, double w1,
+    T t2, double w2
+  ){
+    return distribution(
+      weighted(t1,w1),
+      weighted(t2,w2)
+    );
+  }
+
+  public static <T> Gen<T> distribution(
+    T t1, double w1,
+    T t2, double w2,
+    T t3, double w3
+  ){
+    return distribution(
+      weighted(t1,w1),
+      weighted(t2,w2),
+      weighted(t3,w3)
+    );
+  }
+
+  public static <T> Gen<T> distribution(
+    T t1, double w1,
+    T t2, double w2,
+    T t3, double w3,
+    T t4, double w4
+  ){
+    return distribution(
+      weighted(t1,w1),
+      weighted(t2,w2),
+      weighted(t3,w3),
+      weighted(t4,w4)
+    );
+  }
+
+  public static <T> Gen<T> distribution(
+    T t1, double w1,
+    T t2, double w2,
+    T t3, double w3,
+    T t4, double w4,
+    T t5, double w5
+  ){
+    return distribution(
+      weighted(t1,w1),
+      weighted(t2,w2),
+      weighted(t3,w3),
+      weighted(t4,w4),
+      weighted(t5,w5)
+    );
+  }
+
+  public static <T> Gen<T> distribution(
+    T t1, double w1,
+    T t2, double w2,
+    T t3, double w3,
+    T t4, double w4,
+    T t5, double w5,
+    T t6, double w6
+  ){
+    return distribution(
+      weighted(t1,w1),
+      weighted(t2,w2),
+      weighted(t3,w3),
+      weighted(t4,w4),
+      weighted(t5,w5),
+      weighted(t6,w6)
+    );
+  }
+
   @SafeVarargs
   public static <T> Gen<T> distribution(
     Weighted<T> wt1,
@@ -379,7 +450,6 @@ public abstract class Gen<T>
             .collect(toList())
     );
   }
-
 
   public static <T> Gen<T> distribution(
     Map<T,Double> valuesWeights
