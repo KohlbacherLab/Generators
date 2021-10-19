@@ -267,12 +267,7 @@ public final class Tests
     Gen<Patient> patient =
       Gen.given(
         Gen.uuidStrings(),
-        Gen.distribution(
-          Patient.Gender.MALE,    48,
-          Patient.Gender.FEMALE,  48,
-          Patient.Gender.OTHER,   1,
-          Patient.Gender.UNKNOWN, 1
-        ),
+        Gen.enumValues(Patient.Gender.class),
         Gen.localDatesBetween(
           LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
         ),

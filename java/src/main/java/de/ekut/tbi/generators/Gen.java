@@ -313,6 +313,10 @@ public abstract class Gen<T>
                .get());    
   }
 
+  public static <T extends Enum<T>> Gen<T> enumValues(Class<T> cl){
+    return oneOf(Stream.of(cl.getEnumConstants()).collect(toList()));
+  }
+
 
   public static <K,T> Gen<Map.Entry<K,T>> oneOf(Map<K,T> ts){
     return oneOf(ts.entrySet());
