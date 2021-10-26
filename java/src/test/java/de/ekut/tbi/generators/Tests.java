@@ -186,7 +186,7 @@ public final class Tests
         Gen.enumValues(Foo.Type.class),
         Gen.listOf(5,Gen.uuidStrings())
       )
-      .yield(Foo::new);
+      .map(Foo::new);
  
     Gen<List<Foo>> genfoos = Gen.listOf(15,genfoo);
 
@@ -209,7 +209,7 @@ public final class Tests
         ),
         Gen.optional(Gen.localDateNow())
       )
-      .yield(Patient::of);
+      .map(Patient::of);
  
     Gen<List<Patient>> genpatients = Gen.listOf(15,patient);
 

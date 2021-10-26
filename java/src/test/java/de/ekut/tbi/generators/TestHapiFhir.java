@@ -27,7 +27,7 @@ public final class TestHapiFhir
       .map(s -> new Identifier().setValue(s));      
 
 
-  @Test
+  @Test(expected = Test.None.class)
   public void testPatientGen(){
 
     var genPat =
@@ -35,12 +35,14 @@ public final class TestHapiFhir
         IDENTIFIERS,
         Gen.enumValues(Enumerations.AdministrativeGender.class)
       )
-      .yield(
+      .map(
         (identifier,gender) ->
           new org.hl7.fhir.r4.model.Patient()
                 .addIdentifier(identifier)
                 .setGender(gender)
       );
+
+    var pat = genPat.next(RND);
 
   }
 

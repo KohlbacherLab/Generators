@@ -283,7 +283,7 @@ public abstract class Gen<T>
         keys,
         values
       )
-      .yield(Gen::entry)
+      .map(Gen::entry)
     )
     .map(s -> s.limit(n).collect(toMap(Map.Entry::getKey,Map.Entry::getValue)));
   }
@@ -580,7 +580,7 @@ public abstract class Gen<T>
         Gen.localDatesBetween(start.toLocalDate(), end.toLocalDate()),
         Gen.localTimesBetween(start.toLocalTime(), end.toLocalTime())
       )
-      .yield(LocalDateTime::of);
+      .map(LocalDateTime::of);
   }
 
 
@@ -615,35 +615,35 @@ public abstract class Gen<T>
   {
     private Comprehension2(){};
 
-    public abstract <T> Gen<T> yield(BiFunction<? super A,? super B,T> f);
+    public abstract <T> Gen<T> map(BiFunction<? super A,? super B,T> f);
   }
 
   public static abstract class Comprehension3<A,B,C>
   {
     private Comprehension3(){};
 
-    public abstract <T> Gen<T> yield(Function3<? super A,? super B,? super C,T> f);
+    public abstract <T> Gen<T> map(Function3<? super A,? super B,? super C,T> f);
   }
 
   public static abstract class Comprehension4<A,B,C,D>
   {
     private Comprehension4(){};
 
-    public abstract <T> Gen<T> yield(Function4<? super A,? super B,? super C,? super D,T> f);
+    public abstract <T> Gen<T> map(Function4<? super A,? super B,? super C,? super D,T> f);
   }
 
   public static abstract class Comprehension5<A,B,C,D,E>
   {
     private Comprehension5(){};
 
-    public abstract <T> Gen<T> yield(Function5<? super A,? super B,? super C,? super D,? super E,T> f);
+    public abstract <T> Gen<T> map(Function5<? super A,? super B,? super C,? super D,? super E,T> f);
   }
 
   public static abstract class Comprehension6<A,B,C,D,E,F>
   {
     private Comprehension6(){};
 
-    public abstract <T> Gen<T> yield(Function6<? super A,? super B,? super C,? super D,? super E,? super F,T> f);
+    public abstract <T> Gen<T> map(Function6<? super A,? super B,? super C,? super D,? super E,? super F,T> f);
   }
 
 
@@ -654,7 +654,7 @@ public abstract class Gen<T>
   ){
     return new Comprehension2<>(){
       @Override
-      public <T> Gen<T> yield(BiFunction<? super A,? super B,T> f){
+      public <T> Gen<T> map(BiFunction<? super A,? super B,T> f){
         return genA.flatMap(a -> genB.map(b -> f.apply(a,b)));
       }
     };
@@ -669,7 +669,7 @@ public abstract class Gen<T>
   ){
     return new Comprehension3<>(){
       @Override
-      public <T> Gen<T> yield(Function3<? super A,? super B,? super C,T> f){
+      public <T> Gen<T> map(Function3<? super A,? super B,? super C,T> f){
         return
           genA.flatMap(
             a -> genB.flatMap(
@@ -690,7 +690,7 @@ public abstract class Gen<T>
   ){
     return new Comprehension4<>(){
       @Override
-      public <T> Gen<T> yield(
+      public <T> Gen<T> map(
         Function4<? super A,? super B,? super C,? super D,T> f
       ){
         return
@@ -715,7 +715,7 @@ public abstract class Gen<T>
   ){
     return new Comprehension5<>(){
       @Override
-      public <T> Gen<T> yield(
+      public <T> Gen<T> map(
         Function5<? super A,? super B,? super C,? super D,? super E,T> f
       ){
         return
@@ -742,7 +742,7 @@ public abstract class Gen<T>
   ){
     return new Comprehension6<>(){
       @Override
-      public <T> Gen<T> yield(
+      public <T> Gen<T> map(
         Function6<? super A,? super B,? super C,? super D,? super E,? super F,T> func
       ){
         return

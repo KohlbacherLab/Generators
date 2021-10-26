@@ -46,18 +46,19 @@ public final class Patient
 // (syntax analogous to Scala "for comprehensions"):
 // ----------------------------------------------------------------------------
 
-Gen<Patient> genPat = Gen.given(
-  Gen.uuidStrings(),                   // Gen of identifier Strings
-  Gen.oneOf(Patient.Gender.MALE,       // Gen of values from closed value set: here Gender
-            Patient.Gender.FEMALE,
-            Patient.Gender.OTHER,
-            Patient.Gender.UNKNOWN),
-  Gen.localDatesBetween(               // Gen of LocalDate between given start and end
-    LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
-  ),
-  Gen.optional(Gen.localDateNow())     // Gen of Optional type: here LocalDate
-)
-.yield(Patient::of);                   // Function to map respective Gen outputs to: here Patient factory method
+Gen<Patient> genPat =
+  Gen.given(
+    Gen.uuidStrings(),                   // Gen of identifier Strings
+    Gen.oneOf(Patient.Gender.MALE,       // Gen of values from closed value set: here Gender
+              Patient.Gender.FEMALE,
+              Patient.Gender.OTHER,
+              Patient.Gender.UNKNOWN),
+    Gen.localDatesBetween(               // Gen of LocalDate between given start and end
+      LocalDate.of(1979,1,1), LocalDate.of(1990,1,1)
+    ),
+    Gen.optional(Gen.localDateNow())     // Gen of Optional type: here LocalDate
+  )
+  .map(Patient::of);                   // Function to map respective Gen outputs to: here Patient factory method
 
 
 
