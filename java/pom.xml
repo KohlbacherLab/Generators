@@ -61,6 +61,13 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>ca.uhn.hapi.fhir</groupId>
+      <artifactId>hapi-fhir-structures-r4</artifactId>
+      <version>5.5.1</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies> 
 
 </project>

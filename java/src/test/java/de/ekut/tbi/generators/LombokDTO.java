@@ -6,6 +6,10 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.Instant;
 
+import java.util.Optional;
+import java.util.UUID;
+
+
 
 public final class LombokDTO
 {
@@ -15,18 +19,42 @@ public final class LombokDTO
   public static final class Foo
   {
 
-    final int num;
+    public enum Type {
+      ONE,TWO,THREE,FOUR
+    }
 
-    final double dbl;
+    private int num;
+
+    private double dbl;
  
-    final String str;
+    private String str;
 
-    final LocalDate date;
+    private LocalDate date;
 
-    final Instant instant;
+    private Instant instant;
 
+    private Type type;
   }
 
+
+  @Data
+  @AllArgsConstructor
+  public static final class Patient
+  {
+
+    public enum Gender {
+      MALE,FEMALE,OTHER,UNKNOWN
+    }
+
+    private final UUID id;
+
+    private final Gender gender;
+
+    private final LocalDate birthDate;
+
+    private final Optional<LocalDate> dateOfDeath;
+
+  }
 
 
 }

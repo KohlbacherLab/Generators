@@ -896,7 +896,7 @@ public abstract class Gen<T>
         }
 
       } else {   
-        throw new IllegalStateException("Unsupported case for Generator derivation of parameterized type!");
+        throw new IllegalStateException("Unsupported case for Generator derivation of parameterized type: " + t);
       }
 
     // Case: Any other type expected 'normal'
@@ -909,20 +909,6 @@ public abstract class Gen<T>
 
   private static <T> Gen<T> deriveForImpl(Class<? extends T> cl, Optional<Map<Type,Gen<?>>> defaultGens){
   
-    return
-      defaultGens
-        .flatMap(g -> Optional.ofNullable((Gen<T>)g.get(cl)))
-        .orElseGet(
-          () ->
-            (Gen<T>)DERIVED_GENS.computeIfAbsent(
-              cl, c -> buildGenFor(Class.class.cast(c),defaultGens)
-            )
-        );
-  }
-
-
-  private static <T> Gen<T> buildGenFor(Class<? extends T> cl, Optional<Map<Type,Gen<?>>> defaultGens){
-
     if (cl.isEnum()){
 
       Gen<?> enumGen =
@@ -933,150 +919,165 @@ public abstract class Gen<T>
       return (Gen<T>)enumGen;
 
     } else {
- 
-      // 1. Strategy: Look up non-default constructor with longest parameter signature
-      //              to generate T instances accordingly
-      Optional<Constructor<?>> nonDefaultCons =
-        Stream.of(cl.getConstructors())
-          .filter(c -> c.getParameterCount() > 0)
-          .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount());
+
+      return
+        defaultGens
+          .flatMap(g -> Optional.ofNullable((Gen<T>)g.get(cl)))
+          .orElseGet(
+            () ->
+              (Gen<T>)DERIVED_GENS.computeIfAbsent(
+                cl, c -> buildGenFor(Class.class.cast(c),defaultGens)
+              )
+          );
+    }
+  }
+
+
+  private static <T> Gen<T> buildGenFor(Class<? extends T> cl, Optional<Map<Type,Gen<?>>> defaultGens){
+
+    // 1. Strategy: Look up non-default constructor with longest parameter signature
+    //              to generate T instances accordingly
+    Optional<Constructor<?>> nonDefaultCons =
+      Stream.of(cl.getConstructors())
+        .filter(c -> c.getParameterCount() > 0)
+        .max((c1,c2) -> c1.getParameterCount() - c2.getParameterCount());
   
-      if (nonDefaultCons.isPresent()){
+    if (nonDefaultCons.isPresent()){
   
-        Constructor<?> cons = nonDefaultCons.get();
-      
-        Type[] signature = cons.getGenericParameterTypes();
-      
-        Gen<Object[]> genArgs =
-          oneOfEach(
-            ArrayList::new,
-            Stream.of(signature)
-              .map(c -> deriveFor(c, defaultGens))
-              .collect(toList())
-          )
-          .map(List::toArray);
-              
-        return (Gen<T>)apply(
-          rnd -> {
-            try {
-              return cons.newInstance(genArgs.next(rnd));
-            } catch (Exception ex){
-               throw new RuntimeException(ex); 
-            }
-          }
-        );
-/*  
-        List<Gen<?>> gens =
+      Constructor<?> cons = nonDefaultCons.get();
+    
+      Type[] signature = cons.getGenericParameterTypes();
+
+    
+      Gen<Object[]> genArgs =
+        oneOfEach(
+          ArrayList::new,
           Stream.of(signature)
-                .map(c -> deriveFor(c, defaultGens))
-                .collect(toList());
-              
+            .map(t -> deriveFor(t, defaultGens))
+            .collect(toList())
+        )
+        .map(List::toArray);
+            
+      return (Gen<T>)apply(
+        rnd -> {
+          try {
+            return cons.newInstance(genArgs.next(rnd));
+          } catch (Exception ex){
+             throw new RuntimeException(ex); 
+          }
+        }
+      );
+
+/*  
+      List<Gen<?>> gens =
+        Stream.of(signature)
+              .map(t -> deriveFor(t, defaultGens))
+              .collect(toList());
+
+      return (Gen<T>)apply(
+        rnd -> {
+          try {
+            return cons.newInstance(gens.stream().map(g -> g.next(rnd)).toArray());
+          } catch (Exception ex){
+             throw new RuntimeException(ex); 
+          }
+        }
+      );
+*/  
+    } else {
+  
+      // 2. Strategy: Look up default constructor and list of setter methods
+      //              to create empty instances and invoke the setters successively
+      try {
+  
+        Constructor<?> defaultCons = cl.getConstructor();
+        
+        List<Map.Entry<Method,Gen<?>>> settersGens =
+          Stream.of(cl.getMethods())
+            .filter(m -> m.getName().startsWith("set") && m.getParameterCount() == 1)
+            .map(m -> Gen.<Method,Gen<?>>entry(m,deriveFor(m.getGenericParameterTypes()[0], defaultGens)))
+            .collect(toList());
+           
         return (Gen<T>)apply(
           rnd -> {
             try {
-              return cons.newInstance(gens.stream().map(g -> g.next(rnd)).toArray());
+              Object obj = defaultCons.newInstance();
+        
+              for (Map.Entry<Method,Gen<?>> entry : settersGens){
+                Method m = entry.getKey();
+                Object v = entry.getValue().next(rnd);
+        
+                m.invoke(obj,v);   
+              }
+              return obj;
+        
             } catch (Exception ex){
                throw new RuntimeException(ex); 
             }
-          }
+          } 
         );
-*/  
-      } else {
+
+      } catch (NoSuchMethodException ex){
   
-        // 2. Strategy: Look up default constructor and list of setter methods
-        //              to create empty instances and invoke the setters successively
-        try {
+        // 3. Strategy: Look up static builder method with longest parameter signature
+        //              to create T instance
   
-          Constructor<?> defaultCons = cl.getConstructor();
+        Optional<Method> optBuilder =
+          Stream.of(cl.getMethods())
+            .filter(m -> Modifier.isStatic(m.getModifiers()) && 
+                         m.getParameterCount() > 0 &&
+                         m.getReturnType().equals(cl))
+            .max((m1,m2) -> m1.getParameterCount() - m2.getParameterCount());
+            
+        if (optBuilder.isPresent()){
+  
+          Method builder = optBuilder.get();
+  
+          Type[] signature = builder.getGenericParameterTypes();
           
-          List<Map.Entry<Method,Gen<?>>> settersGens =
-            Stream.of(cl.getMethods())
-              .filter(m -> m.getName().startsWith("set") && m.getParameterCount() == 1)
-              .map(m -> Gen.<Method,Gen<?>>entry(m,deriveFor(m.getGenericParameterTypes()[0], defaultGens)))
-              .collect(toList());
-             
+          List<Gen<?>> gens =
+            Stream.of(signature)
+                  .map(c -> deriveFor(c, defaultGens))
+                  .collect(toList());
+                
           return (Gen<T>)apply(
             rnd -> {
               try {
-                Object obj = defaultCons.newInstance();
-          
-                for (Map.Entry<Method,Gen<?>> entry : settersGens){
-                  Method m = entry.getKey();
-                  Object v = entry.getValue().next(rnd);
-          
-                  m.invoke(obj,v);   
-                }
-                return obj;
-          
-              } catch (Exception ex){
-                 throw new RuntimeException(ex); 
+                return builder.invoke(null, gens.stream().map(g -> g.next(rnd)).toArray());
+              } catch (Exception e){
+                 throw new RuntimeException(e); 
               }
-            } 
+            }
           );
+  
+        } else {
 
-        } catch (NoSuchMethodException ex){
+          // 4. Strategy: Look up static parameter-less builder method to create T instance
   
-          // 3. Strategy: Look up static builder method with longest parameter signature
-          //              to create T instance
-  
-          Optional<Method> optBuilder =
+          Optional<Method> optBuilder2 =
             Stream.of(cl.getMethods())
               .filter(m -> Modifier.isPublic(m.getModifiers()) &&
                            Modifier.isStatic(m.getModifiers()) && 
-                           m.getParameterCount() > 0 &&
+                           m.getParameterCount() == 0 &&
                            m.getReturnType().equals(cl))
-              .max((m1,m2) -> m1.getParameterCount() - m2.getParameterCount());
+              .findFirst();
               
-          if (optBuilder.isPresent()){
-  
-            Method builder = optBuilder.get();
-  
-            Type[] signature = builder.getGenericParameterTypes();
-            
-            List<Gen<?>> gens =
-              Stream.of(signature)
-                    .map(c -> deriveFor(c, defaultGens))
-                    .collect(toList());
-                  
-            return (Gen<T>)apply(
-              rnd -> {
+          if (optBuilder2.isPresent()){
+        
+            Method builder = optBuilder2.get();
+        
+            return (Gen<T>)supply(
+              () -> {
                 try {
-                  return builder.invoke(null, gens.stream().map(g -> g.next(rnd)).toArray());
+                  return builder.invoke(null);
                 } catch (Exception e){
                    throw new RuntimeException(e); 
                 }
               }
             );
-  
+        
           } else {
-
-            // 4. Strategy: Look up static parameter-less builder method to create T instance
-  
-            Optional<Method> optBuilder2 =
-              Stream.of(cl.getMethods())
-                .filter(m -> Modifier.isPublic(m.getModifiers()) &&
-                             Modifier.isStatic(m.getModifiers()) && 
-                             m.getParameterCount() == 0 &&
-                             m.getReturnType().equals(cl))
-                .findFirst();
-                
-            if (optBuilder2.isPresent()){
-          
-              Method builder = optBuilder2.get();
-          
-              return (Gen<T>)supply(
-                () -> {
-                  try {
-                    return builder.invoke(null);
-                  } catch (Exception e){
-                     throw new RuntimeException(e); 
-                  }
-                }
-              );
-          
-            } else {
-              throw new RuntimeException(ex); 
-            }
+            throw new RuntimeException(ex); 
           }
         }
       }

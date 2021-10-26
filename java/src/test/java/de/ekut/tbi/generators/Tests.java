@@ -19,59 +19,6 @@ public final class Tests
 
   private static final Random RND = new Random(42);
 
-  private static final class Foo {
-
-    public final int i;
-    public final double d;
-    public final List<String> s;
-
-    public Foo(
-      int i,
-      double d,
-      List<String> s
-    ){
-      this.i = i;
-      this.d = d;
-      this.s = s;
-    }
-
-    @Override
-    public String toString(){
-      return "Foo(" + i + "," + d + "," + s + ")";
-    }
-  }
-  
-
-  private static final class Bar {
-
-    private int i;
-    private double d;
-    private Map<String,String> s;
-
-    public Bar(){ }
-
-    public Bar setInt(int i){
-      this.i = i;
-      return this;
-    }
-
-    public Bar setDouble(double d){
-      this.d = d;
-      return this;
-    }
-
-    public Bar setStrings(final Map<String,String> s){
-      this.s = s;
-      return this;
-    }
-
-    @Override
-    public String toString(){
-      return "Bar(" + i + "," + d + "," + s + ")";
-    }
-  }
- 
-
 
  
   @Test
@@ -135,27 +82,15 @@ public final class Tests
     var pU = 0.10;
     var pY = 0.06;
 
-/*
-    var vowelGen = Gen.distribution(
-      Gen.weighted("A",pA),
-      Gen.weighted("E",pE),
-      Gen.weighted("I",pI),
-      Gen.weighted("O",pO),
-      Gen.weighted("U",pU),
-      Gen.weighted("Y",pY)
-    ); 
-*/
-
-    var vowelGen = Gen.distribution(
-      Map.of(
+    var vowelGen =
+      Gen.distribution(
         "A",pA,
         "E",pE,
         "I",pI,
         "O",pO,
         "U",pU,
         "Y",pY
-      )
-    ); 
+      ); 
 
     var n = 100000;
 
@@ -248,6 +183,7 @@ public final class Tests
       Gen.given(
         Gen.ints(),
         Gen.doubles(),
+        Gen.enumValues(Foo.Type.class),
         Gen.listOf(5,Gen.uuidStrings())
       )
       .yield(Foo::new);
@@ -332,7 +268,8 @@ public final class Tests
     Gen<LombokDTO.Foo> genFoo =
       Gen.deriveFor(LombokDTO.Foo.class);
 
-    System.out.println(genFoo.next(RND));
+    Gen<LombokDTO.Patient> genPatient =
+      Gen.deriveFor(LombokDTO.Patient.class);
 
   }
 
