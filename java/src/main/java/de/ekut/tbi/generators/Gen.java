@@ -52,6 +52,8 @@ public abstract class Gen<T>
   //--------------------------------------------------------------------------
   public abstract T next(Random rnd);
 
+
+  //TODO: re-consider if this method is really safe -- and needed!
   public Gen<T> filter(Predicate<? super T> p)
   {
     return apply(
@@ -137,7 +139,7 @@ public abstract class Gen<T>
 
   public static final Gen<LocalDateTime> localDateTimeNow(){ return LDT_NOW; }
 
-  public static final Gen<Instant> intantNow(){ return INST_NOW; }
+  public static final Gen<Instant> instantNow(){ return INST_NOW; }
 
 
   private static final List<String> ALPHABET =
@@ -609,6 +611,16 @@ public abstract class Gen<T>
     public T apply(A a, B b, C c, D d, E e, F f);
   }
 
+  @FunctionalInterface
+  public interface Function7<A,B,C,D,E,F,G,T>{
+    public T apply(A a, B b, C c, D d, E e, F f, G g);
+  }
+
+  @FunctionalInterface
+  public interface Function8<A,B,C,D,E,F,G,H,T>{
+    public T apply(A a, B b, C c, D d, E e, F f, G g, H h);
+  }
+
 
 
   public static abstract class Comprehension2<A,B>
@@ -644,6 +656,20 @@ public abstract class Gen<T>
     private Comprehension6(){};
 
     public abstract <T> Gen<T> map(Function6<? super A,? super B,? super C,? super D,? super E,? super F,T> f);
+  }
+
+  public static abstract class Comprehension7<A,B,C,D,E,F,G>
+  {
+    private Comprehension7(){};
+
+    public abstract <T> Gen<T> map(Function7<? super A,? super B,? super C,? super D,? super E,? super F,? super G,T> f);
+  }
+
+  public static abstract class Comprehension8<A,B,C,D,E,F,G,H>
+  {
+    private Comprehension8(){};
+
+    public abstract <T> Gen<T> map(Function8<? super A,? super B,? super C,? super D,? super E,? super F,? super G,? super H,T> f);
   }
 
 
@@ -753,6 +779,68 @@ public abstract class Gen<T>
             d -> genE.flatMap(
             e -> genF.map(
             f -> func.apply(a,b,c,d,e,f))))))
+          );
+      }
+    };
+  }
+
+
+  public static <A,B,C,D,E,F,G> Comprehension7<A,B,C,D,E,F,G> given
+  (
+    Gen<? extends A> genA,
+    Gen<? extends B> genB,
+    Gen<? extends C> genC,
+    Gen<? extends D> genD,
+    Gen<? extends E> genE,
+    Gen<? extends F> genF,
+    Gen<? extends G> genG
+  ){
+    return new Comprehension7<>(){
+      @Override
+      public <T> Gen<T> map(
+        Function7<? super A,? super B,? super C,? super D,? super E,? super F,? super G,T> func
+      ){
+        return
+          genA.flatMap(
+            a -> genB.flatMap(
+            b -> genC.flatMap(
+            c -> genD.flatMap(
+            d -> genE.flatMap(
+            e -> genF.flatMap(
+            f -> genG.map(
+            g -> func.apply(a,b,c,d,e,f,g)))))))
+          );
+      }
+    };
+  }
+
+
+  public static <A,B,C,D,E,F,G,H> Comprehension8<A,B,C,D,E,F,G,H> given
+  (
+    Gen<? extends A> genA,
+    Gen<? extends B> genB,
+    Gen<? extends C> genC,
+    Gen<? extends D> genD,
+    Gen<? extends E> genE,
+    Gen<? extends F> genF,
+    Gen<? extends G> genG,
+    Gen<? extends H> genH
+  ){
+    return new Comprehension8<>(){
+      @Override
+      public <T> Gen<T> map(
+        Function8<? super A,? super B,? super C,? super D,? super E,? super F,? super G,? super H,T> func
+      ){
+        return
+          genA.flatMap(
+            a -> genB.flatMap(
+            b -> genC.flatMap(
+            c -> genD.flatMap(
+            d -> genE.flatMap(
+            e -> genF.flatMap(
+            f -> genG.flatMap(
+            g -> genH.map(
+            h -> func.apply(a,b,c,d,e,f,g,h))))))))
           );
       }
     };
