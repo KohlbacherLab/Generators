@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.groupingBy;
 
 import java.time.*;
 
@@ -75,63 +76,43 @@ public final class Tests
   @Test
   public void testGenDistribution(){
 
-    var pA = 0.25;
-    var pE = 0.35;
-    var pI = 0.13;
-    var pO = 0.11;
-    var pU = 0.10;
-    var pY = 0.06;
+    Map<String,Double> vowelPs =
+      Map.of(
+        "A", 0.25,
+        "E", 0.35,
+        "I", 0.13,
+        "O", 0.11,
+        "U", 0.10,
+        "Y", 0.06
+      );
 
     var vowelGen =
-      Gen.distribution(
-        "A",pA,
-        "E",pE,
-        "I",pI,
-        "O",pO,
-        "U",pU,
-        "Y",pY
-      ); 
+      Gen.distribution(vowelPs); 
 
     var n = 100000;
 
-    var numA = 0;
-    var numE = 0;
-    var numI = 0;
-    var numO = 0;
-    var numU = 0;
-    var numY = 0;
-
-    var vowels =
+    var vowelNs =
       Stream.generate(() -> vowelGen.next(RND))
         .limit(n)
-        .collect(toList());
+        .collect(groupingBy(v -> v));
 
-    for (String vowel : vowels){
+    var delta = 0.05;
 
-      switch (vowel){
-        case "A": { numA++; break; }
-        case "E": { numE++; break; }
-        case "I": { numI++; break; }
-        case "O": { numO++; break; }
-        case "U": { numU++; break; }
-        case "Y": { numY++; break; }
-        default: { break; }
-      }
-    }
+    assertTrue(
+      vowelNs.entrySet()
+        .stream()
+        .allMatch(
+          entry -> {
+            var v = entry.getKey();
+            var m = entry.getValue().size();
+            var p = vowelPs.get(v);
 
-    var freqA = (double)numA/n;
-    var freqE = (double)numE/n;
-    var freqI = (double)numI/n;
-    var freqO = (double)numO/n;
-    var freqU = (double)numU/n;
-    var freqY = (double)numY/n;
+            var freq = (double)m/n;
 
-    assertTrue(freqA > pA-0.05 && freqA < pA+0.05);
-    assertTrue(freqE > pE-0.05 && freqE < pE+0.05);
-    assertTrue(freqI > pI-0.05 && freqI < pI+0.05);
-    assertTrue(freqO > pO-0.05 && freqO < pO+0.05);
-    assertTrue(freqU > pU-0.05 && freqU < pU+0.05);
-    assertTrue(freqY > pY-0.05 && freqY < pY+0.05);
+            return freq > p-delta && freq < p+delta;
+          }
+        )
+    );
 
   }
 
