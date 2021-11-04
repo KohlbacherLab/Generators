@@ -20,6 +20,7 @@ public final class Tests
 
   private static final Random RND = new Random(42);
 
+  private static final int N = 100;
 
  
   @Test
@@ -32,7 +33,7 @@ public final class Tests
 
     assertTrue(
       Stream.generate(() -> gen.next(RND))
-        .limit(250)
+        .limit(N)
         .allMatch(
           i -> i >= start && i < end
         )
@@ -49,7 +50,7 @@ public final class Tests
 
     assertTrue(
       Stream.generate(() -> alphaNums.next(RND))
-        .limit(50)
+        .limit(N)
         .allMatch(
           s -> s.length() == n &&
                s.matches("^[a-zA-Z0-9]+$")
@@ -67,7 +68,7 @@ public final class Tests
 
     assertTrue(
       Stream.generate(() -> evens.next(RND))
-        .limit(30)
+        .limit(N)
         .allMatch(i -> i%2 == 0)
     );
   }
@@ -214,13 +215,24 @@ public final class Tests
   @Test(expected = Test.None.class)
   public void testBarGenDerivation(){
 
+    var start = 1;
+    var end   = 42;
+
     Gen<Bar> genBar =
       Gen.deriveFor(
         Bar.class,
         Map.of(
-          int.class, Gen.intsBetween(1,42)
+          int.class, Gen.intsBetween(start,end)
         )
       );
+
+    assertTrue(
+      Stream.generate(() -> genBar.next(RND))
+        .limit(N)
+        .allMatch(
+          bar -> bar.getInt() >= start && bar.getInt() < end
+        )
+    );
  
   }
 

@@ -17,6 +17,10 @@ public final class Bar {
     return this;
   }
 
+  public int getInt(){
+    return this.i;
+  }
+
   public Bar setDouble(double d){
     this.d = d;
     return this;
