@@ -28,7 +28,7 @@ object Name
   case class Family(name: String)
 }
 
-case class Name(given: Name.Given,
+case class Name(`given`: Name.Given,
                 family: Name.Family)
 
 case class PatId(value: UUID)
