@@ -83,19 +83,19 @@ object Gen extends VersionSpecifics
 
   def const[T](t: => T): Gen[T] = Gen { () => t }
 
-  val ints: Gen[Int] = Gen { rnd => rnd.nextInt }
+  val ints: Gen[Int] = Gen { rnd => rnd.nextInt() }
 
-  val longs: Gen[Long] = Gen { rnd => rnd.nextLong }
+  val longs: Gen[Long] = Gen { rnd => rnd.nextLong() }
 
-  val doubles: Gen[Double] = Gen { rnd => rnd.nextDouble }
+  val doubles: Gen[Double] = Gen { rnd => rnd.nextDouble() }
 
-  val gaussians: Gen[Double] = Gen { rnd => rnd.nextGaussian }
+  val gaussians: Gen[Double] = Gen { rnd => rnd.nextGaussian() }
 
-  val floats: Gen[Float] = Gen { rnd => rnd.nextFloat }
+  val floats: Gen[Float] = Gen { rnd => rnd.nextFloat() }
   
-  val booleans: Gen[Boolean] = Gen { rnd => rnd.nextBoolean }
+  val booleans: Gen[Boolean] = Gen { rnd => rnd.nextBoolean() }
 
-  val chars: Gen[Char] = Gen { rnd => rnd.nextPrintableChar }
+  val chars: Gen[Char] = Gen { rnd => rnd.nextPrintableChar() }
   
   val uuids: Gen[UUID] = Gen { () => UUID.randomUUID }
 
@@ -134,12 +134,12 @@ object Gen extends VersionSpecifics
     gen: Gen[T],
     p: Double
   ): Gen[Option[T]] = Gen {
-    rnd => if (rnd.nextDouble < p) Some(gen.next(rnd))
+    rnd => if (rnd.nextDouble() < p) Some(gen.next(rnd))
            else None
   }
 
 
-  def enum[E <: Enumeration](e: E): Gen[E#Value] =
+  def `enum`[E <: Enumeration](e: E): Gen[E#Value] =
     Gen.oneOf(e.values.toSeq)
 
 
@@ -152,7 +152,7 @@ object Gen extends VersionSpecifics
     tGen: Gen[T],
     uGen: Gen[U]
   ): Gen[Either[T,U]] = Gen {
-    rnd => Either.cond(rnd.nextBoolean,
+    rnd => Either.cond(rnd.nextBoolean(),
                        uGen.next(rnd),
                        tGen.next(rnd))
   }
@@ -186,7 +186,7 @@ object Gen extends VersionSpecifics
     rnd =>
       val p = 1.0/(1 + lenAsInt())
 
-      if (rnd.nextDouble < p) Inl(head.value.next(rnd))
+      if (rnd.nextDouble() < p) Inl(head.value.next(rnd))
       else                    Inr(tail.next(rnd))
   }
 
@@ -255,7 +255,7 @@ object Gen extends VersionSpecifics
     end: Float
   ): Gen[Float] =
     Gen {
-    rnd => rnd.nextFloat*(end-start) + start
+    rnd => rnd.nextFloat()*(end-start) + start
    }
 
   def doublesBetween(
@@ -263,7 +263,7 @@ object Gen extends VersionSpecifics
     end: Double
   ): Gen[Double] =
     Gen {
-      rnd => rnd.nextDouble*(end-start) + start
+      rnd => rnd.nextDouble()*(end-start) + start
     }
 
 
@@ -274,7 +274,7 @@ object Gen extends VersionSpecifics
 
   def iterate[T](
     it: Iterator[T]
-  ): Gen[T] = Gen { () => it.next }
+  ): Gen[T] = Gen { () => it.next() }
 
 
   def indices: Gen[Int] = indicesFrom(0)
@@ -323,7 +323,7 @@ object Gen extends VersionSpecifics
 
     Gen {
       rnd =>
-        val d = rnd.nextDouble
+        val d = rnd.nextDouble()
         binnedTs.find(bt => bt._1.contains(d)).get._2
     }
 
@@ -363,7 +363,7 @@ object Gen extends VersionSpecifics
 
     Gen {
       rnd =>
-        val d = rnd.nextDouble
+        val d = rnd.nextDouble()
         binnedTs.find(bt => bt._1.contains(d)).get._2.next(rnd)
     }
 
@@ -428,10 +428,10 @@ object Gen extends VersionSpecifics
   import scala.math
 
   def positiveInts: Gen[Int] =
-    Gen { rnd => math.abs(rnd.nextInt) }
+    Gen { rnd => math.abs(rnd.nextInt()) }
 
   def positiveLongs: Gen[Long] =
-    Gen { rnd => math.abs(rnd.nextLong) }
+    Gen { rnd => math.abs(rnd.nextLong()) }
 
 
 
