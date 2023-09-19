@@ -1,18 +1,18 @@
 
 
 name := "generators"
-organization in ThisBuild := "de.ekut.tbi"
-version := "0.1-SNAPSHOT"
+ThisBuild / organization := "de.ekut.tbi"
+ThisBuild / version := "1.0-SNAPSHOT"
 
 lazy val scala212 = "2.12.10"
-lazy val scala213 = "2.13.8"
+lazy val scala213 = "2.13.12"
 lazy val supportedScalaVersions =
   List(
     scala212,
     scala213
   )
 
-scalaVersion in ThisBuild := scala213
+ThisBuild / scalaVersion := scala213
 
 unmanagedSourceDirectories in Compile += {
   val sourceDir = (sourceDirectory in Compile).value
@@ -33,7 +33,7 @@ lazy val root = project.in(file("."))
     libraryDependencies ++= Seq(
       "com.chuusai"   %% "shapeless" % "2.3.3",
       "org.typelevel" %% "cats-core" % "2.1.1",
-      "org.scalatest" %% "scalatest" % "3.0.8" % "test"
+      "org.scalatest" %% "scalatest" % "3.0.8" % Test
    ),
    crossScalaVersions := supportedScalaVersions
  )
@@ -50,19 +50,15 @@ lazy val compilerOptions = Seq(
   "-unchecked",
   "-Xfatal-warnings",
   "-feature",
-//  "-language:existentials",
   "-language:higherKinds",
-//  "-language:implicitConversions",
-//  "-language:postfixOps",
   "-deprecation"
 )
 
 lazy val commonSettings = Seq(
   scalacOptions ++= compilerOptions,
-  resolvers ++= Seq(
-    "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
-    Resolver.sonatypeRepo("releases"),
-    Resolver.sonatypeRepo("snapshots")
-  )
+  resolvers ++= Seq("Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository") ++
+    Resolver.sonatypeOssRepos("releases") ++
+    Resolver.sonatypeOssRepos("snapshots")
+  
 )
 

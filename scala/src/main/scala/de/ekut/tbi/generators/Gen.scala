@@ -152,9 +152,12 @@ object Gen extends VersionSpecifics
     tGen: Gen[T],
     uGen: Gen[U]
   ): Gen[Either[T,U]] = Gen {
-    rnd => Either.cond(rnd.nextBoolean(),
-                       uGen.next(rnd),
-                       tGen.next(rnd))
+    rnd =>
+      Either.cond(
+        rnd.nextBoolean(),
+        uGen.next(rnd),
+        tGen.next(rnd)
+      )
   }
      
      
@@ -165,11 +168,13 @@ object Gen extends VersionSpecifics
     head: Lazy[Gen[H]],
     tail: Gen[T]
   ): Gen[H :: T] = Gen {
-    rnd => head.value.next(rnd) :: tail.next(rnd)
+    rnd =>
+      head.value.next(rnd) :: tail.next(rnd)
   }
 
 
-  implicit val cnilGen: Gen[CNil] = Gen { rnd => throw new RuntimeException("Never reached") }
+  implicit val cnilGen: Gen[CNil] =
+    Gen { rnd => throw new RuntimeException("Never reached") }
 
   /*
      See "D. Gurnell -- The Type Astronaut's Guide to Shapeless", Sec. 8.3.3
@@ -186,8 +191,10 @@ object Gen extends VersionSpecifics
     rnd =>
       val p = 1.0/(1 + lenAsInt())
 
-      if (rnd.nextDouble() < p) Inl(head.value.next(rnd))
-      else                    Inr(tail.next(rnd))
+      if (rnd.nextDouble() < p)
+        Inl(head.value.next(rnd))
+      else
+        Inr(tail.next(rnd))
   }
 
 

@@ -1,14 +1,16 @@
 package de.ekut.tbi.generators
 
 
-import scala.util.{Either,Random}
-
 import java.util.UUID
-
-import java.time.{LocalDate,
-                  LocalDateTime,
-                  Instant}
-
+import java.time.{
+  LocalDate,
+  LocalDateTime,
+  Instant
+}
+import scala.util.{
+  Either,
+  Random
+}
 import org.scalatest.FlatSpec
 
 
@@ -28,8 +30,10 @@ object Name
   case class Family(name: String)
 }
 
-case class Name(`given`: Name.Given,
-                family: Name.Family)
+case class Name(
+  `given`: Name.Given,
+  family: Name.Family
+)
 
 case class PatId(value: UUID)
 case class Pseudonym(value: UUID)
@@ -81,13 +85,23 @@ object Gens
     Gen.oneOf("Müller","Maier","Schmidt","Mayer")
        .map(Name.Family)
 
-  implicit val idGen      = Gen.uuids.map(PatId)
-  implicit val psnGen     = Gen.uuids.map(Pseudonym)
-  implicit val dateGen    = DateTimeGens.localDateNow
-  implicit val optDateGen = Gen.option(dateGen)
-  implicit val instGen    = DateTimeGens.instantNow
+  implicit val idGen: Gen[PatId] =
+    Gen.uuids.map(PatId)
 
-  implicit val patGen = Gen.of[Patient]
+  implicit val psnGen: Gen[Pseudonym] =
+    Gen.uuids.map(Pseudonym)
+
+  implicit val dateGen: Gen[LocalDate] =
+    DateTimeGens.localDateNow
+
+  implicit val optDateGen: Gen[Option[LocalDate]] =
+    Gen.option(dateGen)
+
+  implicit val instGen: Gen[Instant] =
+    DateTimeGens.instantNow
+
+//  implicit val patGen: Gen[Patient] =
+//    Gen.of[Patient]
 
 }
 
@@ -97,7 +111,7 @@ class Tests extends FlatSpec
 
   import Gens._
 
-  implicit val rnd = new Random(42)
+  implicit val rnd: Random = new Random(42)
 
 
   "PositiveInt generation" should "work" in {
@@ -212,7 +226,8 @@ class Tests extends FlatSpec
 
   "Gen[Patient]" should "work" in {
 
-    val pats = List.fill(30)(Gen.of[Patient].next)
+    val pats =
+      List.fill(30)(Gen.of[Patient].next)
 
   }
 
