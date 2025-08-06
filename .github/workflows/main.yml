@@ -1,0 +1,48 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  packages: write
+  contents: write
+  pull-requests: write
+  issues: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    name: Main
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        working-directory: ./scala
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK
+        working-directory: ./scala
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+
+      - name: Setup sbt launcher
+        working-directory: ./scala
+        uses: sbt/setup-sbt@v1
+
+      - name: Build and Test
+        working-directory: ./scala
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: sbt +test
+
