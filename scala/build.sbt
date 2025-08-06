@@ -1,8 +1,4 @@
-
-
-name := "generators"
-ThisBuild / organization := "de.ekut.tbi"
-ThisBuild / version := "1.0-SNAPSHOT"
+import scala.util.Properties.envOrElse
 
 lazy val scala212 = "2.12.10"
 lazy val scala213 = "2.13.16"
@@ -12,7 +8,15 @@ lazy val supportedScalaVersions =
     scala213
   )
 
+name := "generators"
+ThisBuild / organization := "de.ekut.tbi"
+ThisBuild / version      := envOrElse("VERSION","1.0.0")
 ThisBuild / scalaVersion := scala213
+
+val ownerRepo  = envOrElse("REPOSITORY","KohlbacherLab/Generators").split("/")
+ThisBuild / githubOwner      := ownerRepo(0)
+ThisBuild / githubRepository := ownerRepo(1)
+
 
 Compile / unmanagedSourceDirectories += {
   val sourceDir = (Compile / sourceDirectory).value
