@@ -11,8 +11,7 @@ import scala.util.{
   Either,
   Random
 }
-import org.scalatest.FlatSpec
-
+import org.scalatest.flatspec.AnyFlatSpec
 
 
 sealed trait Gender
@@ -100,13 +99,10 @@ object Gens
   implicit val instGen: Gen[Instant] =
     DateTimeGens.instantNow
 
-//  implicit val patGen: Gen[Patient] =
-//    Gen.of[Patient]
-
 }
 
 
-class Tests extends FlatSpec
+class Tests extends AnyFlatSpec
 {
 
   import Gens._
